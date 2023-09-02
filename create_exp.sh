@@ -2,7 +2,7 @@
 
 base_dir=$(pwd)
 echo "base directory $base_dir"
-exp_name='exp_test_8'
+exp_name='exp_test_11'
 exp_dir="$base_dir/$exp_name"
 echo "exp directory $exp_dir"
 mkdir $exp_dir
@@ -11,6 +11,7 @@ gen_dir='/home/chdavis/Code/mpd-md/generate/brushesAndNanoparticles'
 time_adjust='/home/chdavis/Code/mpd-md/analysis/changeTime'
 int_adjust='/home/chdavis/Code/mpd-md/bin/changeIntervals'
 
+nanovalues=(64 128 256 320 384 512 768 1024)
 for ((Uindex=1;Uindex<=2;Uindex +=1))
 do
 Umin_base=-0.175
@@ -35,10 +36,14 @@ do
 	echo $den_dir
 	mkdir $den_dir
 
-	for (( nanos=6;nanos<=10;nanos +=1))
+	#for (( nanos=6;nanos<=10;nanos +=1))
+	##for (( nanos=6;nanos<=9;nanos +=1))
+	for i in ${nanovalues[@]}
 	do
-		nan_num=$((2**$nanos))
-		
+		##nan_num=$(($((2**$nanos))+$((2**8))))
+		nan_num=$i
+		nanos=$nan_num
+		echo $nan_num
 		sim_dir="$den_dir/NP_$nanos"
 		echo $sim_dir
 		mkdir $sim_dir
@@ -48,7 +53,7 @@ do
 		echo "UMin -> $Umin"
 		$gen_dir $file_name $RANDOM 800 $area_den $Umin 40 $nan_num $rad_flt 0 100 100 0.7 3.0 
 		$time_adjust $file_name 0 100000
-                $int_adjust $file_name 1000 100
+		$int_adjust $file_name 1000 100
 		cp "$base_dir/basesim.sh" ./
 		#add processing to submission file
 		echo "$base_dir/MD $file_name" >> ./basesim.sh
