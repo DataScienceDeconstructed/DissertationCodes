@@ -92,7 +92,7 @@ do
 
 		echo "$base_dir/MD $file_name" >> ./basesim.sh #add processing to submission file
 		echo "module load python3" >> ./basesim.sh #add python for analysis to submission file
-		echo "python3 /home/chdavis/Code/main.py $sim_dir/ $file_name ">> ./basesim.sh # execute analytist on the file after simulation.
+		echo "python3 /home/chdavis/Code/main.py $sim_dir/ $file_name ">> ./basesim.sh # execute analyis on the file after simulation.
 
 		# send the simulation off for processing to the cluster
 		sbatch ./basesim.sh
