@@ -5,6 +5,7 @@ import itertools
 import numpy as np
 
 base_dir = "/home/chdavis/Code/mpd-md/bin/exp_test_6"
+base_dir = "/home/chdavis/Code/mpd-md/bin/exp_test_11" # fill ins
 
 if __name__ == "__main__":
     x1_solvent = []
@@ -19,12 +20,12 @@ if __name__ == "__main__":
     plotline_styles =itertools.cycle( ["--","-.",":"])
 
     Umin = "1"
-    rad = "2"
+    rad = "4"
 
     #cylce through the results files
     for (root,dirs,files) in os.walk(base_dir, topdown=True):
         #look only in the equilibrium density files with the proper variables Umin, rad, etc.
-        if "equil_densities.dat" in files and "/Umin_"+Umin+"/rad_"+rad+"/" in root and "/den_1" in root:
+        if "equil_densities.dat" in files and "/Umin_"+Umin+"/rad_"+rad+"/" in root: #and "/den_1" in root:
             fname = os.path.join(root,"equil_densities.dat")
             #here we assign density and color dictionaries based upon the presences of variables in the file name
             #-2 is number of NP
@@ -70,11 +71,22 @@ if __name__ == "__main__":
 
     #here we cycle through our datasets and plot. the scatter plot should be solvent on the x axis and brush on the y axis
     for i in range(len(x)):
-        plt.scatter(x[i], y[i], color=c_value[i])
+        solvfrac = x[i]
+        brushfrac = y[i]
+
+        # approximation can lead to unphysical minor negative values because it always produces a slightly under shot value.
+        # this adjustment prevents those values
+        if x[i] < 0:
+            solvfrac = 0
+
+        if y[i] < 0:
+            brushfrac = 0
+
+        plt.scatter(solvfrac, brushfrac, color=c_value[i])
 
 
-    for i in range(len(x)):
-        plt.text(x[i] * (1 + 0.01), y[i] * (1 + 0.01) , str(labels[i]), fontsize=12)
+    #for i in range(len(x)):
+    #    plt.text(x[i] * (1 + 0.01), y[i] * (1 + 0.01) , str(labels[i]), fontsize=12)
     #    densities[labels[i]].append([x[i],y[i]])
 
     for k,v in densities.items():
@@ -83,6 +95,8 @@ if __name__ == "__main__":
 
         #add trendline to plot
         plt.plot(bfl[:,0], bfl[:,1], linestyle=next(plotline_styles))
+        with open(base_dir +'_output/'+str(Umin)+"_"+str(rad)+"/" +str(k)+'.txt', 'w') as file:
+            file.writelines( str(row[0]) + " " + str(row[1]) + "\n" for row in bfl)
 
     plt.show()
 
