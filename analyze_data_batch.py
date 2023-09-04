@@ -65,9 +65,9 @@ if __name__ == "__main__":
     y = x1_brush
 
     #here we label the graphs as appropriate
-    plt.xlabel("solvent density #NP/r0^3")
-    plt.ylabel("brush density #NP/r0^3")
-    plt.title("NP brush density as a function fof NP solvent density\n Umin = "+Umin+" \n rad = "+rad+" ")
+    plt.xlabel("solvent volume fraction")
+    plt.ylabel("brush volume fraction")
+    plt.title("brush NP volume fraction as a function of solvent NP volume fraction density\n Umin = "+str(float(Umin)*-0.175)+" \n rad = "+rad+" ")
 
     #here we cycle through our datasets and plot. the scatter plot should be solvent on the x axis and brush on the y axis
     for i in range(len(x)):
