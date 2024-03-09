@@ -1,0 +1,190 @@
+import os
+import numpy as np
+from scipy import stats
+#from copy import deepcopy
+
+import matplotlib.pyplot as plt
+
+
+
+base_dir = "/media/clayton/Seagate/experiment_data/"
+processed = 0
+total = 0
+datadir = {}
+# traverse root directory, and list directories as dirs and files as files
+
+def get_data_keys(graphdata):
+
+    Umin_set = set()
+    rad_set = set()
+    den_set = set()
+    NP_set = set()
+
+    for current_Umin in graphdata.keys():
+        Umin_set = Umin_set.union({current_Umin})
+        for current_rad in graphdata[current_Umin].keys():
+            rad_set = rad_set.union({current_rad})
+            for current_den in graphdata[current_Umin][current_rad].keys():
+                den_set = den_set.union({current_den})
+                for current_NP in graphdata[current_Umin][current_rad][current_den].keys():
+                    NP_set = NP_set.union({current_NP})
+
+    Umin_list = list(Umin_set)
+    Umin_list.sort()
+    rad_list = list(rad_set)
+    rad_list.sort()
+    den_list = list(den_set)
+    den_list.sort()
+    NP_list = list(NP_set)
+    NP_list.sort()
+
+def plot(datadir):
+
+    Umin_list = ['Umin_1', 'Umin_2']
+    rad_list = ['rad_2', 'rad_4']
+    den_list = ['den_1', 'den_2', 'den_3', 'den_4', 'den_5', 'den_6', 'den_7', 'den_8', 'den_9', 'den_10', 'den_11', 'den_12', 'den_13', 'den_14', 'den_15', 'den_16', 'den_17', 'den_18', 'den_19', 'den_20']
+    NP_list = ['NP_64', 'NP_128', 'NP_256', 'NP_320', 'NP_384', 'NP_512',  'NP_768', 'NP_1024']
+
+    mod_value = 3
+    for Umin in Umin_list:
+        for rad in rad_list:
+            # build graph at this level
+            den_line = []
+            txt = "missing values"
+            for i, den in enumerate(den_list):
+
+                if i % mod_value != 0:
+                    continue
+
+                # build data lines at this level
+                x = []
+                y = []
+                line_full = True
+
+                for NP in NP_list:
+                    # build Line here
+                    if Umin in datadir:
+                        if rad in datadir[Umin]:
+                            if den in datadir[Umin][rad]:
+                                if NP in datadir[Umin][rad][den]:
+                                    x.append(datadir[Umin][rad][den][NP][0])
+                                    y.append(datadir[Umin][rad][den][NP][1])
+                                else:
+                                    line_full = False
+                                    txt += Umin + " / " + rad + " / " + den + " / " + NP +"\n"
+                            else:
+                                line_full = False
+                        else:
+                            line_full = False
+                    else:
+                        line_full = False
+
+                # record if line data is fully available i.e. nothing missing
+                if line_full:
+                    den_line.append([x.copy(), y.copy()])
+
+            #build plot
+            fig, ax = plt.subplots()
+            for i, lines in enumerate(den_line):
+                ax.plot(lines[0], lines[1], label='sigma = ' + str(mod_value*(i+1)*.03))
+
+
+            ax.legend()
+            ax.set_xlabel('Solvent NP Volume Fraction')
+            ax.set_ylabel('Brush NP Volume Fraction')
+            ax.set_title('Brush NP Volume Fraction Versus Solvent NP Volume Fraction \n Umin = '+ str(Umin) + ' , radius = ' + str(rad))
+
+            plt.figtext(0.5, 0.01, txt, wrap=True, horizontalalignment='center', fontsize=12)
+            plt.show()
+
+    comment = "bp"
+    # xp = np.linspace(-1, len(brushNPVolFrac[points:]), 100)
+    # _ = plt.plot(xp, brush_p0(xp), '-', xp, brush_p1(xp), '--', range(len(brushNPVolFrac[points:])),
+    #              brushNPVolFrac[points:], '.')
+    # plt.ylim(0, 1)
+    # plt.plot()
+
+def calc_equalibrium(data):
+
+    rValue = (False,0.0)
+
+    #get the point that marks 80% of the data
+    points = int(len(data)*.8)
+    #get the number of observations in the last 20% of data
+    x_values = range(len(data[points:]))
+
+    #create 0th and 1st order fits for the last 20% of data points
+    data0fit = np.polyfit(x_values, data[points:], 0)
+    data1fit = np.polyfit(x_values, data[points:], 1)
+
+    #create polynomial objects from fits.
+    data_p0 = np.poly1d(data0fit)
+    data_p1 = np.poly1d(data1fit)
+
+    #calculate errors for fits.
+    e0 = data_p0(x_values) - data[points:]
+    e1 = data_p1(x_values) - data[points:]
+
+    #do t test to see if distributions are distinguishable
+
+    test_results = stats.ttest_ind(e0, e1)
+
+    # we want to be sure that distributions are really close so if there is up to a 50% chance that one distribution
+    # is more extreme than the other we reject the idea that they are indistinguishable.
+    if test_results.pvalue > .5:
+        rValue = (True, data0fit[0])
+
+    return rValue
+
+breakout = False
+
+for root, dirs, files in os.walk(base_dir):
+    path = root.split(os.sep)
+    total += 1
+    #are we in a data directory?
+    if "NP" in root:
+
+        if ("brush_NP_volume_fraction.dat" in files) and ("solvent_NP_volume_fraction.dat" in files):
+
+            brushNPVolFrac = None
+            solvNPVolFrac = None
+
+            #read the data
+            with open(root+"/brush_NP_volume_fraction.dat", "r") as file:
+                brushNPVolFrac = [float(x) for x in file.readlines()]
+
+            with open(root + "/solvent_NP_volume_fraction.dat", "r") as file:
+                solvNPVolFrac = [float(x) for x in file.readlines()]
+
+            #make sure there is data
+            if len(solvNPVolFrac) < 1 :
+                print(root)
+                continue
+
+            assert len(solvNPVolFrac) == len(brushNPVolFrac)
+
+
+
+            brush_eq = calc_equalibrium(brushNPVolFrac)
+            solv_eq = calc_equalibrium(solvNPVolFrac)
+            processed += 1
+
+            if path[-4] not in datadir:
+                datadir[path[-4]] = {}
+            if path[-3] not in datadir[path[-4]]:
+                datadir[path[-4]][path[-3]] = {}
+            if path[-2] not in datadir[path[-4]][path[-3]]:
+                datadir[path[-4]][path[-3]][path[-2]] = {}
+            if path[-1] not in datadir[path[-4]][path[-3]][path[-2]]:
+                datadir[path[-4]][path[-3]][path[-2]][path[-1]] = (solv_eq[1], brush_eq[1])
+
+            bpcomment = "comment"
+        else:
+            print(root)
+
+
+print(str(processed) + " sims have values out of "+ str(total))
+print("that's " + str(100.0* processed / total) + " percent")
+get_data_keys(datadir)
+plot(datadir)
+print("Done")

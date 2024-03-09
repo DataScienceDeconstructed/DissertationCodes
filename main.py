@@ -44,8 +44,8 @@ if __name__ == "__main__":
 
     # find a file if no file available grab a default directory and file
     print("Processing file to derive simulation parameters of interest")
-    dir_base = sys.argv[1] if len(sys.argv)>1 else "/home/chdavis/Code/mpd-md/bin/main_testing2/exp_test_6/Umin_2/rad_2/den_10/NP_10/"
-    filename = sys.argv[2] if len(sys.argv)>2 else "exp_test_6.Umin2.rad2.den10.NP10"
+    dir_base = sys.argv[1] if len(sys.argv)>1 else "/media/clayton/Seagate/experiment_data/test/Umin_1/rad_4/den_1/NP_1024/"
+    filename = sys.argv[2] if len(sys.argv)>2 else "exp_test_11.Umin1.rad4.den1.NP1024" #"exp_test_6.Umin2.rad2.den10.NP10"
     print(dir_base, filename)
 
     #dist holds number of particles loaded in brush and floating in solvent at each time step
