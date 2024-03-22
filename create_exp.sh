@@ -151,17 +151,18 @@ while IFS=' ' read -r line Uvalue radius aDen nanos; do
         echo $sim_dir
         file_name="$exp_name-Umin$Uvalue-rad$radius-den$aDen-NP$nanos"
         echo $file_name
-        $gen_dir $file_name $RANDOM 800 $aDen $Uvalue 40 $nanos $radius 0 100 100 0.7 3.0
-		    $time_adjust $file_name 0 100000
-		    $int_adjust $file_name 1000 100
-
+        echo "$gen_dir $file_name $RANDOM 800 $aDen $Uvalue 40 $nanos $radius 0 100 100 0.7 3.0"
+		    echo "$time_adjust $file_name 0 100000"
+		    echo "$int_adjust $file_name 1000 100"
+        exit 0
 		    #copy the default basesim file into this directory, and update it for this simulation
 		    cp "$base_dir/basesim.sh" ./
 
 		    echo "$base_dir/MD $file_name" >> ./basesim.sh #add processing to submission file
 		    echo "module load python3" >> ./basesim.sh #add python for analysis to submission file
 		    echo "python3 /home/chdavis/Code/main.py $sim_dir/ $file_name ">> ./basesim.sh # execute analyis on the file after simulation.
-        curl -d "text=Clayton sim finished in $sim_dir" -d "${slack[1]}" -H "${slack[0]}" -X POST https://slack.com/api/chat.postMessage
+        curl_command='curl -d "text=Clayton sim finished in $sim_dir" -d "${slack[1]}" -H "${slack[0]}" -X POST https://slack.com/api/chat.postMessage'
+        echo "$(eval echo "$curl_command")" >> ./basesim.sh
 
 		    # send the simulation off for processing to the cluster
 		    sbatch ./basesim.sh
