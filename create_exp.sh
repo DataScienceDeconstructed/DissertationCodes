@@ -66,7 +66,7 @@ echo "Experiment directory $exp_dir"
 # we also create a list that helps control the number of nanparticles in the simulations
 
 #the compiled mpd code home directory
-mpd_dir='/home/chdavis/Code/mpd-md'
+mpd_dir='/home/chdavis/base_code/mpd-md'
 if [ -d "$mpd_dir" ]; then
   echo "mpd directory exists: $mpd_dir"
 else
