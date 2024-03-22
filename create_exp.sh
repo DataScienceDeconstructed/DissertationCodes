@@ -243,6 +243,8 @@ mkdir $rad_dir
 		##echo "UMin -> $Umin"
 
 		# generate the files needed for the simulation and adjust default time variables
+		module load gcc/8.2.0
+		module load fftw/3.8.0
 		$gen_dir $file_name $RANDOM 800 $area_den $Umin 40 $nan_num $rad_flt 0 100 100 0.7 3.0
 		$time_adjust $file_name 0 100000
 		$int_adjust $file_name 1000 100
@@ -250,6 +252,8 @@ mkdir $rad_dir
 		#copy the default basesim file into this directory, and update it for this simulation
 		cp "$base_dir/basesim.sh" ./
 
+    echo "module load gcc/8.2.0" >> ./basesim.sh
+    echo "module load fftw/3.8.0" >> ./basesim.sh
 		echo "$base_dir/MD $file_name" >> ./basesim.sh #add processing to submission file
 		echo "module load python3" >> ./basesim.sh #add python for analysis to submission file
 		echo "python3 /home/chdavis/Code/main.py $sim_dir/ $file_name ">> ./basesim.sh # execute analyis on the file after simulation.
