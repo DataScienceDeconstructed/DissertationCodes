@@ -150,12 +150,12 @@ while IFS=' ' read -r line Uvalue radius aDen nanos; do
         echo "brush NP sim"
         echo $sim_dir
         file_name="${exp_name}_Umin${Uvalue}_rad${radius}_den${aDen}_NP${nanos}"
-        file_name=${file_name//./\$}
+        file_name=${file_name//./\$} # can't use decimels apparently because of mpd code
         echo $file_name
         $gen_dir $file_name $RANDOM 800 $aDen $Uvalue 40 $nanos $radius 0 100 100 0.7 3.0
-		    echo "$time_adjust $file_name 0 100000"
-		    echo "$int_adjust $file_name 1000 100"
-        exit 0
+		    $time_adjust $file_name 0 100000
+		    $int_adjust $file_name 1000 100
+
 		    #copy the default basesim file into this directory, and update it for this simulation
 		    cp "$base_dir/basesim.sh" ./
 
