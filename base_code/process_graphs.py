@@ -1,6 +1,7 @@
 import os
 import numpy as np
 from scipy import stats
+#from copy import deepcopy
 
 import matplotlib.pyplot as plt
 
@@ -207,6 +208,10 @@ for root, dirs, files in os.walk(base_dir):
                 datadir[path[-4]][path[-3]][path[-2]][path[-1]] = (solv_eq[1], brush_eq[1])
 
             frame_file = root+"/frames_exp_test_11.Umin"+path[-4][5:]+".rad"+path[-3][4:]+".den"+path[-2][4:]+".NP"+path[-1][3:]+".xyz"
+
+            if not os.path.isfile(root+"/animation.npy"):
+                build_3d_animation(frame_file, float(path[-3][4:]))
+
 
         else:
             print(root)

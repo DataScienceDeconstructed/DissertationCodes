@@ -36,7 +36,6 @@ is of interest for np saturation of the polymer brush. current data files that a
 """
 
 from ComputationalEquilibriums import ReferenceDistribution
-from scipy.stats import chi2_contingency
 import numpy as np
 import sys
 
@@ -45,7 +44,7 @@ if __name__ == "__main__":
     # find a file if no file available grab a default directory and file
     print("Processing file to derive simulation parameters of interest")
     dir_base = sys.argv[1] if len(sys.argv)>1 else "/media/clayton/Seagate/experiment_data/test/Umin_1/rad_4/den_1/NP_1024/"
-    filename = sys.argv[2] if len(sys.argv)>2 else "exp_test_11.Umin1.rad4.den1.NP1024" #"exp_test_6.Umin2.rad2.den10.NP10"
+    filename = sys.argv[2] if len(sys.argv)>2 else "exp_test_11-Umin1-rad4-den1-NP1024" #"exp_test_6.Umin2.rad2.den10.NP10"
     print(dir_base, filename)
 
     #dist holds number of particles loaded in brush and floating in solvent at each time step
@@ -271,12 +270,16 @@ if __name__ == "__main__":
     # these z axis profiles are only written out for the last frame of the simulation.
     # float x is a cast of the number of polymers or NPs in the z slice. the divisor represents the area of the slice
     # making these values densities.
+    num_frames = 20
+
     with open(dir_base + "polymer_profile.dat", 'w') as fp:
-        for i, x in enumerate(poly_profile_lag[-1]):
+        averaged_profile = np.average(poly_profile_lag[-num_frames:], axis=1)
+        for i, x in enumerate(averaged_profile[-1]):
             fp.write( str( bin_length * i ) + " " +str(float(x) / (system_dimensions[0] * system_dimensions[1] * bin_length) )+"\n")
 
     with open(dir_base + "np_profile.dat", 'w') as fp:
-        for i, x in enumerate(np_profile_lag[-1]):
+        averaged_np_profile = np.average(np_profile_lag[-num_frames:], axis=1)
+        for i, x in enumerate(averaged_np_profile[-1]):
             fp.write( str( bin_length * i ) + " " +str(float(x) / (system_dimensions[0] * system_dimensions[1] * bin_length) )+"\n")
 
 
