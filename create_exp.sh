@@ -149,7 +149,7 @@ while IFS=' ' read -r line Uvalue radius aDen nanos; do
     if [ "$line" -eq 1 ]; then
         echo "brush NP sim"
         echo $sim_dir
-        file_name="$(exp_name)_Umin$(Uvalue)_rad$(radius)_den$(aDen)_NP$(nanos)"
+        file_name="${exp_name}_Umin${Uvalue}_rad${radius}_den${aDen}_NP${nanos}"
         echo $file_name
         echo $gen_dir $file_name $RANDOM 800 $aDen $Uvalue 40 $nanos $radius 0 100 100 0.7 3.0
 		    echo "$time_adjust $file_name 0 100000"
