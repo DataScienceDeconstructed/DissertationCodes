@@ -1,5 +1,3 @@
-#probably don't need this anymore it just creasts some temporary graphs and runs as a one off.
-
 import os
 import json
 import matplotlib.pyplot as plt
