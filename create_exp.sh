@@ -101,11 +101,11 @@ fi
 
 
 # Assign the filename to a variable
-filename="$base_dir/simulation_specs.sim"
+spec="$base_dir/simulation_specs.sim"
 
 # Check if the file exists
-if [ ! -f "$filename" ]; then
-    echo "sim spec file not found: $filename"
+if [ ! -f "$spec" ]; then
+    echo "sim spec file not found: $spec"
     ceho "Aborting because no spec to define behavior"
     exit 1
 fi
@@ -174,7 +174,7 @@ while IFS=' ' read -r line Uvalue radius aDen nanos; do
 
     #go back to the base directory
     cd "$base_dir"
-done < "$filename"
+done < "$spec"
 
 echo "exiting"
 exit 0
