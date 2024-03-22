@@ -23,18 +23,18 @@ fi
 
 #check if slack alerting exists
 # Assign the filename to a variable
-filename="$base_dir/alert.slack"
+slack_file="$base_dir/alert.slack"
 
 # Check if the file exists
-if [ ! -f "$filename" ]; then
-    echo "File not found: $filename"
+if [ ! -f "$slack_file" ]; then
+    echo "File not found: $slack_file"
     echo "Aborting without alerting"
     exit 1
 fi
 
 # Read the slack data
 
-mapfile -t slack < <(head -n 2 "$filename")
+mapfile -t slack < <(head -n 2 "$slack_file")
 
 #name the experiment
 exp_name='exp_1'
@@ -150,7 +150,7 @@ while IFS=' ' read -r line Uvalue radius aDen nanos; do
         echo "brush NP sim"
         echo $sim_dir
         file_name="${exp_name}_Umin${Uvalue}_rad${radius}_den${aDen}_NP${nanos}"
-        file_name=${filename//./\$}
+        file_name=${file_name//./\$}
         echo $file_name
         echo $gen_dir $file_name $RANDOM 800 $aDen $Uvalue 40 $nanos $radius 0 100 100 0.7 3.0
 		    echo "$time_adjust $file_name 0 100000"
