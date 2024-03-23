@@ -21,20 +21,32 @@ else
     exit 1
 fi
 
+md_file="$base_dir/MD"
+
+
+# Check if the md file exists
+if [ -f "$md_file" ]; then
+    echo "MD file exists: $md_file"
+else
+    echo "MD does not exist at $md_file"
+    echo "Aborting program, provide MD file at $md_file"
+    exit 1
+fi
+
 #check if slack alerting exists
 # Assign the filename to a variable
-filename="$base_dir/alert.slack"
+slack_file="$base_dir/alert.slack"
 
 # Check if the file exists
-if [ ! -f "$filename" ]; then
-    echo "File not found: $filename"
+if [ ! -f "$slack_file" ]; then
+    echo "File not found: $slack_file"
     echo "Aborting without alerting"
     exit 1
 fi
 
 # Read the slack data
 
-mapfile -t slack < <(head -n 2 "$filename")
+mapfile -t slack < <(head -n 2 "$slack_file")
 
 #name the experiment
 exp_name='exp_1'
@@ -110,7 +122,9 @@ if [ ! -f "$spec" ]; then
     exit 1
 fi
 
-# Open the file and loop through its contents
+#load modules for mpd code
+module load gcc/8.2.0
+module load fftw/3.8.0
 
 # Open the file and parse its contents
 while IFS=' ' read -r line Uvalue radius aDen nanos; do
@@ -149,19 +163,27 @@ while IFS=' ' read -r line Uvalue radius aDen nanos; do
     if [ "$line" -eq 1 ]; then
         echo "brush NP sim"
         echo $sim_dir
-        file_name="$exp_name-Umin$Uvalue-rad$radius-den$aDen-NP$nanos"
+        file_name="${exp_name}_Umin${Uvalue}_rad${radius}_den${aDen}_NP${nanos}"
+        file_name=${file_name//./\-} # can't use decimels apparently because of mpd code
         echo $file_name
         $gen_dir $file_name $RANDOM 800 $aDen $Uvalue 40 $nanos $radius 0 100 100 0.7 3.0
-		    $time_adjust $file_name 0 100000
-		    $int_adjust $file_name 1000 100
+		    #$time_adjust $file_name 0 100000
+		    #$int_adjust $file_name 1000 100
+        #these have been changed to hurry up testing
+        $time_adjust $file_name 0 1000
+		    $int_adjust $file_name 100 10
 
 		    #copy the default basesim file into this directory, and update it for this simulation
 		    cp "$base_dir/basesim.sh" ./
 
+        echo "module load gcc/8.2.0" >> ./basesim.sh
+        echo "module load fftw/3.8.0" >> ./basesim.sh
 		    echo "$base_dir/MD $file_name" >> ./basesim.sh #add processing to submission file
-		    echo "module load python3" >> ./basesim.sh #add python for analysis to submission file
-		    echo "python3 /home/chdavis/Code/main.py $sim_dir/ $file_name ">> ./basesim.sh # execute analyis on the file after simulation.
-        curl -d "text=Clayton sim finished in $sim_dir" -d "${slack[1]}" -H "${slack[0]}" -X POST https://slack.com/api/chat.postMessage
+		    echo "module load python/3.8.7" >> ./basesim.sh #add python for analysis to submission file
+		    echo "python3 $base_dir/main.py $sim_dir/ $file_name ">> ./basesim.sh # execute analyis on the file after simulation.
+
+		    curl_command='curl -d \"text=Clayton sim finished in $sim_dir\" -d \"${slack[1]}\" -H \"${slack[0]}\" -X POST https://slack.com/api/chat.postMessage'
+        echo "$(eval echo "$curl_command")" >> ./basesim.sh
 
 		    # send the simulation off for processing to the cluster
 		    sbatch ./basesim.sh
@@ -255,8 +277,8 @@ mkdir $rad_dir
     echo "module load gcc/8.2.0" >> ./basesim.sh
     echo "module load fftw/3.8.0" >> ./basesim.sh
 		echo "$base_dir/MD $file_name" >> ./basesim.sh #add processing to submission file
-		echo "module load python3" >> ./basesim.sh #add python for analysis to submission file
-		echo "python3 /home/chdavis/Code/main.py $sim_dir/ $file_name ">> ./basesim.sh # execute analyis on the file after simulation.
+		echo "module load python/3.8.7" >> ./basesim.sh #add python for analysis to submission file
+		echo "python3 $base_dir/main.py $sim_dir/ $file_name ">> ./basesim.sh # execute analyis on the file after simulation.
     #echo "" send alert that processing has completed here
 		# send the simulation off for processing to the cluster
 		sbatch ./basesim.sh
