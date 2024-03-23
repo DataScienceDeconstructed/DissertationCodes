@@ -105,7 +105,7 @@ def plot(datadir):
     # plt.ylim(0, 1)
     # plt.plot()
 
-def calc_equalibrium(data):
+def calc_equilibrium(data):
 # performs an average and 1st order linear approximation of the dataset and compares the distribution of errors to tell
 # if the two approximations are distinguishable.
 
@@ -193,8 +193,8 @@ for root, dirs, files in os.walk(base_dir):
             # make sure we have the same amount of data for both the brush and solvent
             assert len(solvNPVolFrac) == len(brushNPVolFrac)
 
-            brush_eq = calc_equalibrium(brushNPVolFrac)
-            solv_eq = calc_equalibrium(solvNPVolFrac)
+            brush_eq = calc_equilibrium(brushNPVolFrac)
+            solv_eq = calc_equilibrium(solvNPVolFrac)
             processed += 1
 
             if path[-4] not in datadir:
