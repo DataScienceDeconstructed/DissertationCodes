@@ -110,7 +110,9 @@ if [ ! -f "$spec" ]; then
     exit 1
 fi
 
-# Open the file and loop through its contents
+#load modules for mpd code
+module load gcc/8.2.0
+module load fftw/3.8.0
 
 # Open the file and parse its contents
 while IFS=' ' read -r line Uvalue radius aDen nanos; do
@@ -162,10 +164,13 @@ while IFS=' ' read -r line Uvalue radius aDen nanos; do
 		    #copy the default basesim file into this directory, and update it for this simulation
 		    cp "$base_dir/basesim.sh" ./
 
+        echo "module load gcc/8.2.0" >> ./basesim.sh
+        echo "module load fftw/3.8.0" >> ./basesim.sh
 		    echo "$base_dir/MD $file_name" >> ./basesim.sh #add processing to submission file
-		    echo "module load python3" >> ./basesim.sh #add python for analysis to submission file
+		    echo "module load python/3.8.7" >> ./basesim.sh #add python for analysis to submission file
 		    echo "python3 $base_dir/main.py $sim_dir/ $file_name ">> ./basesim.sh # execute analyis on the file after simulation.
-        curl_command='curl -d "text=Clayton sim finished in $sim_dir" -d "${slack[1]}" -H "${slack[0]}" -X POST https://slack.com/api/chat.postMessage'
+
+		    curl_command='curl -d \"text=Clayton sim finished in $sim_dir\" -d \"${slack[1]}\" -H \"${slack[0]}\" -X POST https://slack.com/api/chat.postMessage'
         echo "$(eval echo "$curl_command")" >> ./basesim.sh
 
 		    # send the simulation off for processing to the cluster

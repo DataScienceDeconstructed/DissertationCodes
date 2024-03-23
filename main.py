@@ -273,12 +273,12 @@ if __name__ == "__main__":
     num_frames = 20
 
     with open(dir_base + "polymer_profile.dat", 'w') as fp:
-        averaged_profile = np.average(poly_profile_lag[-num_frames:], axis=1)
+        averaged_profile = np.average(poly_profile_lag[-num_frames:], axis=0)
         for i, x in enumerate(averaged_profile[-1]):
             fp.write( str( bin_length * i ) + " " +str(float(x) / (system_dimensions[0] * system_dimensions[1] * bin_length) )+"\n")
 
     with open(dir_base + "np_profile.dat", 'w') as fp:
-        averaged_np_profile = np.average(np_profile_lag[-num_frames:], axis=1)
+        averaged_np_profile = np.average(np_profile_lag[-num_frames:], axis=0)
         for i, x in enumerate(averaged_np_profile[-1]):
             fp.write( str( bin_length * i ) + " " +str(float(x) / (system_dimensions[0] * system_dimensions[1] * bin_length) )+"\n")
 
