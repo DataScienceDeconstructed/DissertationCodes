@@ -21,6 +21,18 @@ else
     exit 1
 fi
 
+md_file="$base_dir/MD"
+
+
+# Check if the md file exists
+if [ -f "$md_file" ]; then
+    echo "MD file exists: $md_file"
+else
+    echo "MD does not exist at $md_file"
+    echo "Aborting program, provide MD file at $md_file"
+    exit 1
+fi
+
 #check if slack alerting exists
 # Assign the filename to a variable
 slack_file="$base_dir/alert.slack"
