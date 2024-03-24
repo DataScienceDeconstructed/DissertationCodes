@@ -131,6 +131,7 @@ while IFS=' ' read -r line Uvalue radius aDen nanos; do
 
     # Check if the line starts with a hashtag
     if [[ $line == "#"* ]]; then
+        echo "skipping $line"
         continue  # Skip this line
     fi
 
@@ -182,7 +183,9 @@ while IFS=' ' read -r line Uvalue radius aDen nanos; do
 		    echo "module load python/3.8.7" >> ./basesim.sh #add python for analysis to submission file
 		    echo "python3 $base_dir/main.py $sim_dir/ $file_name ">> ./basesim.sh # execute analyis on the file after simulation.
 
-		    curl_command='curl -d \"text=Clayton sim finished in $sim_dir\" -d \"${slack[1]}\" -H \"${slack[0]}\" -X POST https://slack.com/api/chat.postMessage'
+        echo 'slurm_file=$(find . -type f -name "slurm*" -print -quit)'>> ./basesim.sh # execute analyis on the file after simulation.
+        echo 'slurm_lines=$(tail -n 5 $slurm_file)' >> ./basesim.sh
+		    curl_command='curl -d \"text=Clayton sim finished in $sim_dir \n $slurm_lines \" -d \"${slack[1]}\" -H \"${slack[0]}\" -X POST https://slack.com/api/chat.postMessage'
         echo "$(eval echo "$curl_command")" >> ./basesim.sh
 
 		    # send the simulation off for processing to the cluster
@@ -196,6 +199,7 @@ while IFS=' ' read -r line Uvalue radius aDen nanos; do
 
     #go back to the base directory
     cd "$base_dir"
+    echo $line
 done < "$spec"
 
 echo "exiting"
