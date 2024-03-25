@@ -185,8 +185,9 @@ while IFS=' ' read -r line Uvalue radius aDen nanos; do
 
         echo 'slurm_file=$(find . -type f -name "slurm*" -print -quit)'>> ./basesim.sh # execute analyis on the file after simulation.
         echo 'slurm_lines=$(tail -n 5 $slurm_file)' >> ./basesim.sh
-		    curl_command='curl -d \"text=Clayton sim finished in $sim_dir \n $slurm_lines \" -d \"${slack[1]}\" -H \"${slack[0]}\" -X POST https://slack.com/api/chat.postMessage'
-        echo "$(eval echo "$curl_command")" >> ./basesim.sh
+		    #curl_command="curl -d \"text=Clayton sim finished in $sim_dir \n " ' $slurm_lines ' " \" " "-d \"${slack[1]}\" -H \"${slack[0]}\" -X POST https://slack.com/api/chat.postMessage"
+        #echo "$curl_command"
+        echo -n "curl -d \"text=Clayton sim finished in $sim_dir \n "' $slurm_lines '" \" " "-d \"${slack[1]}\" -H \"${slack[0]}\" -X POST https://slack.com/api/chat.postMessage" >> ./basesim.sh
 
 		    # send the simulation off for processing to the cluster
 		    sbatch ./basesim.sh
