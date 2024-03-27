@@ -50,7 +50,7 @@ mapfile -t slack < <(head -n 2 "$slack_file")
 
 #name the experiment
 exp_name='exp_1'
-exp_type='test_NP_BRUSH'
+exp_type='NP_BRUSH'
 exp_dir="$base_dir/$exp_name/$exp_type"
 # Check if the directory exists
 if [ -d "$exp_dir" ]; then
