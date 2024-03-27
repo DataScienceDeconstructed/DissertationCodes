@@ -50,7 +50,7 @@ mapfile -t slack < <(head -n 2 "$slack_file")
 
 #name the experiment
 exp_name='exp_1'
-exp_type='NP_BRUSH'
+exp_type='test_NP_BRUSH'
 exp_dir="$base_dir/$exp_name/$exp_type"
 # Check if the directory exists
 if [ -d "$exp_dir" ]; then
@@ -125,6 +125,8 @@ fi
 #load modules for mpd code
 module load gcc/8.2.0
 module load fftw/3.8.0
+
+curl -d "text=Clayton Sims starting in $exp_dir " -d "${slack[1]}" -H "${slack[0]}" -X POST https://slack.com/api/chat.postMessage
 
 # Open the file and parse its contents
 while IFS=' ' read -r line Uvalue radius aDen nanos; do
@@ -202,6 +204,8 @@ while IFS=' ' read -r line Uvalue radius aDen nanos; do
     cd "$base_dir"
     echo $line
 done < "$spec"
+
+curl -d "text=Clayton Sims have all started in $exp_dir " -d "${slack[1]}" -H "${slack[0]}" -X POST https://slack.com/api/chat.postMessage
 
 echo "exiting"
 exit 0
