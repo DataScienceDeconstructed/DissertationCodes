@@ -6,7 +6,8 @@ import matplotlib.pyplot as plt
 
 
 
-base_dir = "/media/clayton/Seagate/experiment_data/"
+#base_dir = "/media/clayton/Seagate/experiment_data/"
+base_dir = "./exp_1"
 processed = 0
 total = 0
 datadir = {}
@@ -165,20 +166,24 @@ def build_3d_animation(_file, _rad):
 breakout = False
 
 
-# walk the data path to access the data sets.
-
+# walk the data path to access the data sets. this is the main part of the code
 for root, dirs, files in os.walk(base_dir):
     path = root.split(os.sep)
     total += 1
+    error_list = {"no_files":[], "no_data":[]}
     #are we in a data directory?
+
     if "NP" in root:
+        # this if statement assumes that NP is in the leaf directory's name
 
         if ("brush_NP_volume_fraction.dat" in files) and ("solvent_NP_volume_fraction.dat" in files):
-
+            #if the cvolume fraction files are in the directory then we can process
             brushNPVolFrac = None
             solvNPVolFrac = None
 
             #read the data
+            #these datasets describe the NP volume fractions in the brush and solvent respectively at each recorded
+            # time step
             with open(root+"/brush_NP_volume_fraction.dat", "r") as file:
                 brushNPVolFrac = [float(x) for x in file.readlines()]
 
@@ -188,6 +193,7 @@ for root, dirs, files in os.walk(base_dir):
             #make sure there is data
             if len(solvNPVolFrac) < 1 :
                 print(root + " has no data.")
+                error_list["no_data"].append(root)
                 continue
 
             # make sure we have the same amount of data for both the brush and solvent
@@ -210,6 +216,7 @@ for root, dirs, files in os.walk(base_dir):
 
         else:
             print(root)
+            error_list["no_files"].append(root)
 
 
 
@@ -218,4 +225,5 @@ print(str(processed) + " sims have values out of "+ str(total))
 print("that's " + str(100.0* processed / total) + " percent")
 get_data_keys(datadir)
 plot(datadir)
+print("error list", error_list)
 print("Done")
