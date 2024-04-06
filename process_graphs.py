@@ -11,6 +11,10 @@ base_dir = "./exp_1"
 processed = 0
 total = 0
 datadir = {}
+Umin_list = []
+rad_list = []
+den_list = []
+NP_list = []
 # traverse root directory, and list directories as dirs and files as files
 
 def get_data_keys(graphdata):
@@ -40,12 +44,13 @@ def get_data_keys(graphdata):
     NP_list = list(NP_set)
     NP_list.sort()
 
-def plot(datadir):
+    return Umin_list, rad_list, den_list, NP_list
+def plot(datadir, Umin_list, rad_list, den_list, NP_list):
 
-    Umin_list = ['Umin_1', 'Umin_2']
-    rad_list = ['rad_2', 'rad_4']
-    den_list = ['den_1', 'den_2', 'den_3', 'den_4', 'den_5', 'den_6', 'den_7', 'den_8', 'den_9', 'den_10', 'den_11', 'den_12', 'den_13', 'den_14', 'den_15', 'den_16', 'den_17', 'den_18', 'den_19', 'den_20']
-    NP_list = ['NP_64', 'NP_128', 'NP_256', 'NP_320', 'NP_384', 'NP_512',  'NP_768', 'NP_1024']
+  #  Umin_list = ['Umin_1', 'Umin_2']
+  #  rad_list = ['rad_2', 'rad_4']
+  #  den_list = ['den_1', 'den_2', 'den_3', 'den_4', 'den_5', 'den_6', 'den_7', 'den_8', 'den_9', 'den_10', 'den_11', 'den_12', 'den_13', 'den_14', 'den_15', 'den_16', 'den_17', 'den_18', 'den_19', 'den_20']
+  #  NP_list = ['NP_64', 'NP_128', 'NP_256', 'NP_320', 'NP_384', 'NP_512',  'NP_768', 'NP_1024']
 
     mod_value = 3
     for Umin in Umin_list:
@@ -55,8 +60,10 @@ def plot(datadir):
             txt = "missing values"
             for i, den in enumerate(den_list):
 
-                if i % mod_value != 0:
-                    continue
+                #since values aren't based on intergers anymore this is not needed
+                #if you are at the point that you are wondering if you can remove this, then do it.
+                #if i % mod_value != 0:
+                #    continue
 
                 # build data lines at this level
                 x = []
@@ -165,12 +172,12 @@ def build_3d_animation(_file, _rad):
 #main code
 breakout = False
 
-
+error_list = {"no_files":[], "no_data":[]}
 # walk the data path to access the data sets. this is the main part of the code
 for root, dirs, files in os.walk(base_dir):
     path = root.split(os.sep)
     total += 1
-    error_list = {"no_files":[], "no_data":[]}
+
     #are we in a data directory?
 
     if "NP" in root:
@@ -223,7 +230,7 @@ for root, dirs, files in os.walk(base_dir):
 
 print(str(processed) + " sims have values out of "+ str(total))
 print("that's " + str(100.0* processed / total) + " percent")
-get_data_keys(datadir)
-plot(datadir)
+Umin_list, rad_list, den_list, NP_list = get_data_keys(datadir)
+plot(datadir, Umin_list, rad_list, den_list, NP_list)
 print("error list", error_list)
 print("Done")
