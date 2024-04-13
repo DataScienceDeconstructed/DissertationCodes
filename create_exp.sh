@@ -78,7 +78,7 @@ else
   exit 1
 fi
 
-md_file="$mpd_dir/bin/MD"
+md_file="$mpd_dir/MD"
 
 
 # Check if the md file exists
@@ -103,7 +103,7 @@ fi
 
 time_adjust="$mpd_dir/analysis/changeTime"
 int_adjust="$mpd_dir/bin/changeIntervals"
-time_delta="/analysis/changeDeltaT"
+time_delta="$mpd_dir/analysis/changeDeltaT"
 
 if [ -f "$time_adjust" ] && [ -f "$int_adjust" ] && [ -f "$time_delta" ] ; then
     echo "time and interval adjusters exists:"
@@ -184,10 +184,10 @@ while IFS=' ' read -r line Uvalue radius aDen nanos; do
 		    #copy the default basesim file into this directory, and update it for this simulation
 		    cp "$base_dir/basesim.sh" ./
 
-        echo "module load gcc/8.2.0" >> ./basesim.sh
-        echo "module load fftw/3.8.0" >> ./basesim.sh
-		    echo "$base_dir/MD $file_name" >> ./basesim.sh #add processing to submission file
-		    echo "module load python/3.8.7" >> ./basesim.sh #add python for analysis to submission file
+        #echo "module load gcc/8.2.0" >> ./basesim.sh
+        echo "module load fftw/3.3.10/gcc-8.5.0/openmpi-4.1.6" >> ./basesim.sh
+		    echo "$mpd_dir/MD $file_name" >> ./basesim.sh #add processing to submission file
+		    echo "module python/3.12.1/gcc.8.5.0" >> ./basesim.sh #add python for analysis to submission file
 		    echo "python3 $base_dir/main.py $sim_dir/ $file_name ">> ./basesim.sh # execute analyis on the file after simulation.
 
         echo 'slurm_file=$(find . -type f -name "slurm*" -print -quit)'>> ./basesim.sh # execute analyis on the file after simulation.
