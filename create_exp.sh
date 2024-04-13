@@ -21,17 +21,7 @@ else
     exit 1
 fi
 
-md_file="$base_dir/MD"
 
-
-# Check if the md file exists
-if [ -f "$md_file" ]; then
-    echo "MD file exists: $md_file"
-else
-    echo "MD does not exist at $md_file"
-    echo "Aborting program, provide MD file at $md_file"
-    exit 1
-fi
 
 #check if slack alerting exists
 # Assign the filename to a variable
@@ -49,9 +39,10 @@ fi
 mapfile -t slack < <(head -n 2 "$slack_file")
 
 #name the experiment
+exp_data='/scratch/chdavis'
 exp_name='exp_1'
 exp_type='NP_BRUSH'
-exp_dir="$base_dir/$exp_name/$exp_type"
+exp_dir="$exp_data/$exp_name/$exp_type"
 # Check if the directory exists
 if [ -d "$exp_dir" ]; then
     echo "Experimental directory exists: $exp_dir"
@@ -78,12 +69,25 @@ echo "Experiment directory $exp_dir"
 # we also create a list that helps control the number of nanparticles in the simulations
 
 #the compiled mpd code home directory
-mpd_dir='/home/chdavis/base_code/mpd-md'
+#mpd_dir='/home/chdavis/base_code/mpd-md'
+mpd_dir='/home/chdavis/CLionProjects/mpd-md'
 if [ -d "$mpd_dir" ]; then
   echo "mpd directory exists: $mpd_dir"
 else
   echo "### Aborting program. point mpd_dir to real directory that exists"
   exit 1
+fi
+
+md_file="$mpd_dir/bin/MD"
+
+
+# Check if the md file exists
+if [ -f "$md_file" ]; then
+    echo "MD file exists: $md_file"
+else
+    echo "MD does not exist at $md_file"
+    echo "Aborting program, provide MD file at $md_file"
+    exit 1
 fi
 
 #update for different experiment types
@@ -99,8 +103,9 @@ fi
 
 time_adjust="$mpd_dir/analysis/changeTime"
 int_adjust="$mpd_dir/bin/changeIntervals"
+time_delta="/analysis/changeDeltaT"
 
-if [ -f "$time_adjust" ] && [ -f "$int_adjust" ] ; then
+if [ -f "$time_adjust" ] && [ -f "$int_adjust" ] && [ -f "$time_delta" ] ; then
     echo "time and interval adjusters exists:"
     echo "$time_adjust"
     echo "$int_adjust"
@@ -113,8 +118,8 @@ fi
 
 
 # Assign the filename to a variable
-#spec="$base_dir/simulation_specs.sim"
-spec="$base_dir/brushs0819bb9d-7105-45f0-96b4-e58a219cf781.sim"
+spec="$base_dir/simulation_specs.sim"
+#spec="$base_dir/brushs0819bb9d-7105-45f0-96b4-e58a219cf781.sim"
 # Check if the file exists
 if [ ! -f "$spec" ]; then
     echo "sim spec file not found: $spec"
@@ -201,7 +206,7 @@ while IFS=' ' read -r line Uvalue radius aDen nanos; do
     fi
 
     #go back to the base directory
-    cd "$base_dir"
+    cd "$exp_data"
     echo $line
 done < "$spec"
 
