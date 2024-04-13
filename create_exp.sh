@@ -113,8 +113,8 @@ fi
 
 
 # Assign the filename to a variable
-spec="$base_dir/simulation_specs.sim"
-
+#spec="$base_dir/simulation_specs.sim"
+spec="$base_dir/brushs0819bb9d-7105-45f0-96b4-e58a219cf781.sim"
 # Check if the file exists
 if [ ! -f "$spec" ]; then
     echo "sim spec file not found: $spec"
@@ -126,11 +126,14 @@ fi
 module load gcc/8.2.0
 module load fftw/3.8.0
 
+curl -d "text=Clayton Sims starting in $exp_dir " -d "${slack[1]}" -H "${slack[0]}" -X POST https://slack.com/api/chat.postMessage
+
 # Open the file and parse its contents
 while IFS=' ' read -r line Uvalue radius aDen nanos; do
 
     # Check if the line starts with a hashtag
     if [[ $line == "#"* ]]; then
+        echo "skipping $line"
         continue  # Skip this line
     fi
 
@@ -167,11 +170,11 @@ while IFS=' ' read -r line Uvalue radius aDen nanos; do
         file_name=${file_name//./\-} # can't use decimels apparently because of mpd code
         echo $file_name
         $gen_dir $file_name $RANDOM 800 $aDen $Uvalue 40 $nanos $radius 0 100 100 0.7 3.0
-		    #$time_adjust $file_name 0 100000
-		    #$int_adjust $file_name 1000 100
+		    $time_adjust $file_name 0 100000
+		    $int_adjust $file_name 1000 100
         #these have been changed to hurry up testing
-        $time_adjust $file_name 0 1000
-		    $int_adjust $file_name 100 10
+        #$time_adjust $file_name 0 1000
+		    #$int_adjust $file_name 100 10
 
 		    #copy the default basesim file into this directory, and update it for this simulation
 		    cp "$base_dir/basesim.sh" ./
@@ -182,8 +185,11 @@ while IFS=' ' read -r line Uvalue radius aDen nanos; do
 		    echo "module load python/3.8.7" >> ./basesim.sh #add python for analysis to submission file
 		    echo "python3 $base_dir/main.py $sim_dir/ $file_name ">> ./basesim.sh # execute analyis on the file after simulation.
 
-		    curl_command='curl -d \"text=Clayton sim finished in $sim_dir\" -d \"${slack[1]}\" -H \"${slack[0]}\" -X POST https://slack.com/api/chat.postMessage'
-        echo "$(eval echo "$curl_command")" >> ./basesim.sh
+        echo 'slurm_file=$(find . -type f -name "slurm*" -print -quit)'>> ./basesim.sh # execute analyis on the file after simulation.
+        echo 'slurm_lines=$(tail -n 5 $slurm_file)' >> ./basesim.sh
+		    #curl_command="curl -d \"text=Clayton sim finished in $sim_dir \n " ' $slurm_lines ' " \" " "-d \"${slack[1]}\" -H \"${slack[0]}\" -X POST https://slack.com/api/chat.postMessage"
+        #echo "$curl_command"
+        echo -n "curl -d \"text=Clayton sim finished in $sim_dir \n "' $slurm_lines '" \" " "-d \"${slack[1]}\" -H \"${slack[0]}\" -X POST https://slack.com/api/chat.postMessage" >> ./basesim.sh
 
 		    # send the simulation off for processing to the cluster
 		    sbatch ./basesim.sh
@@ -196,7 +202,10 @@ while IFS=' ' read -r line Uvalue radius aDen nanos; do
 
     #go back to the base directory
     cd "$base_dir"
+    echo $line
 done < "$spec"
+
+curl -d "text=Clayton Sims have all started in $exp_dir " -d "${slack[1]}" -H "${slack[0]}" -X POST https://slack.com/api/chat.postMessage
 
 echo "exiting"
 exit 0
