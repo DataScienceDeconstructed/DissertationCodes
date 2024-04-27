@@ -175,11 +175,14 @@ while IFS=' ' read -r line Uvalue radius aDen nanos; do
         file_name=${file_name//./\-} # can't use decimels apparently because of mpd code
         echo $file_name
         $gen_dir $file_name $RANDOM 800 $aDen $Uvalue 40 $nanos $radius 0 100 100 0.7 3.0
-		    $time_adjust $file_name 0 100000
-		    $int_adjust $file_name 1000 100
+		    # these are for real sims
+		    #$time_adjust $file_name 0 100000
+		    #$int_adjust $file_name 1000 100
+
+		    #these are for testing
         #these have been changed to hurry up testing
-        #$time_adjust $file_name 0 1000
-		    #$int_adjust $file_name 100 10
+        $time_adjust $file_name 0 1000
+		    $int_adjust $file_name 100 10
 
 		    #copy the default basesim file into this directory, and update it for this simulation
 		    cp "$base_dir/basesim.sh" ./
@@ -187,7 +190,7 @@ while IFS=' ' read -r line Uvalue radius aDen nanos; do
         #echo "module load gcc/8.2.0" >> ./basesim.sh
         echo "module load fftw/3.3.10/gcc-8.5.0/openmpi-4.1.6" >> ./basesim.sh
 		    echo "$mpd_dir/MD $file_name" >> ./basesim.sh #add processing to submission file
-		    echo "module python/3.12.1/gcc.8.5.0" >> ./basesim.sh #add python for analysis to submission file
+		    echo "module load python/3.12.1/gcc.8.5.0" >> ./basesim.sh #add python for analysis to submission file
 		    echo "python3 $base_dir/main.py $sim_dir/ $file_name ">> ./basesim.sh # execute analyis on the file after simulation.
 
         echo 'slurm_file=$(find . -type f -name "slurm*" -print -quit)'>> ./basesim.sh # execute analyis on the file after simulation.
