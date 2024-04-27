@@ -130,8 +130,8 @@ else
 fi
 
 # Assign the filename to a variable
-spec="$base_dir/simulation_specs.sim"
-#spec="$base_dir/brushs0819bb9d-7105-45f0-96b4-e58a219cf781.sim"
+#spec="$base_dir/simulation_specs.sim"
+spec="$base_dir/brushs03d04dfa-a56d-4014-937a-bf94d5a26a0b.sim"
 # Check if the file exists
 if [ ! -f "$spec" ]; then
     echo "sim spec file not found: $spec"
@@ -187,15 +187,8 @@ while IFS=' ' read -r line Uvalue radius aDen nanos; do
         file_name=${file_name//./\-} # can't use decimels apparently because of mpd code
         echo $file_name
         $gen_dir $file_name $RANDOM 800 $aDen $Uvalue 40 $nanos $radius 0 100 100 0.7 3.0
-		    # these are for real sims
-		    #$time_adjust $file_name 0 100000
-		    #$int_adjust $file_name 1000 100
 
-		    #these are for testing
-        #these have been changed to hurry up testing
-        #$time_adjust $file_name 0 1000
-		    #$int_adjust $file_name 100 10
-        #testing gamme
+		    #these are for warming up
         $gamma_adjust $file_name 20.0
         $time_adjust $file_name 0 10
 		    $int_adjust $file_name 10 10
@@ -211,8 +204,8 @@ while IFS=' ' read -r line Uvalue radius aDen nanos; do
 		    #update system parameters and run to completion.
 		    echo "echo 'updating simulation gamma and time files' " >> ./basesim.sh
 		    echo "$gamma_adjust $file_name 1.0" >> ./basesim.sh
-        echo "$time_adjust $file_name 0 1000" >> ./basesim.sh
-		    echo "$int_adjust $file_name 100 10" >> ./basesim.sh
+        echo "$time_adjust $file_name 0 100000" >> ./basesim.sh
+		    echo "$int_adjust $file_name 1000 100" >> ./basesim.sh
         echo "$mpd_dir/MD $file_name" >> ./basesim.sh #add processing to submission file
 
 
