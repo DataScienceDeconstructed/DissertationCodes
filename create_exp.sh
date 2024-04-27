@@ -196,7 +196,7 @@ while IFS=' ' read -r line Uvalue radius aDen nanos; do
         #$time_adjust $file_name 0 1000
 		    #$int_adjust $file_name 100 10
         #testing gamme
-        $gamma_adjust $filename 20.0
+        $gamma_adjust $file_name 20.0
         $time_adjust $file_name 0 10
 		    $int_adjust $file_name 10 10
 
@@ -210,7 +210,7 @@ while IFS=' ' read -r line Uvalue radius aDen nanos; do
 
 		    #update system parameters and run to completion.
 		    echo "echo 'updating simulation gamma and time files' " >> ./basesim.sh
-		    echo "$gamma_adjust $filename 1.0" >> ./basesim.sh
+		    echo "$gamma_adjust $file_name 1.0" >> ./basesim.sh
         echo "$time_adjust $file_name 0 1000" >> ./basesim.sh
 		    echo "$int_adjust $file_name 100 10" >> ./basesim.sh
         echo "$mpd_dir/MD $file_name" >> ./basesim.sh #add processing to submission file
