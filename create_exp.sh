@@ -102,6 +102,7 @@ else
 fi
 
 time_adjust="$mpd_dir/analysis/changeTime"
+gamma_adjust="$mpd_dir/changeGamma"
 int_adjust="$mpd_dir/bin/changeIntervals"
 time_delta="$mpd_dir/analysis/changeDeltaT"
 
@@ -112,10 +113,21 @@ if [ -f "$time_adjust" ] && [ -f "$int_adjust" ] && [ -f "$time_delta" ] ; then
 
 else
     echo "time or interval adjuster missing"
-    echo "### Aborting program. Update time_adjust and/or int_adjust"
+    echo "### Aborting program. Update time_adjust int_adjust, and/or time_delta"
     exit 1
 fi
 
+
+if [ -f "$gamma_adjust" ]  ; then
+    echo "gamma adjuster exists:"
+    echo "$gamma_adjust"
+
+
+else
+    echo "gamma adjuster missing"
+    echo "### Aborting program. Update gamma"
+    exit 1
+fi
 
 # Assign the filename to a variable
 spec="$base_dir/simulation_specs.sim"
