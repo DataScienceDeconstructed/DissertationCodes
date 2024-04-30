@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --cpus-per-task=8
+#SBATCH --cpus-per-task=24
 #SBATCH --time=7-00:00:00
 #SBATCH --mem-per-cpu=100M
 # The above options will allocate a job with 
