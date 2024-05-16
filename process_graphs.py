@@ -8,8 +8,7 @@ import matplotlib.pyplot as plt
 
 #base_dir = "/media/clayton/Seagate/experiment_data/"
 base_dir = "/scratch/chdavis/exp_1/NP_BRUSH/"
-processed = 0
-total = 0
+
 datadir = {}
 Umin_list = []
 rad_list = []
@@ -152,69 +151,77 @@ def calc_equilibrium(data):
 
 
 #main code
-breakout = False
 
-error_list = {"no_files":[], "no_data":[]}
-# walk the data path to access the data sets. this is the main part of the code
-for root, dirs, files in os.walk(base_dir):
-    path = root.split(os.sep)
-    total += 1
+def calculate_b_v_S_graphs():
+    # calculate graphs for brush concentration versus solvent concentration
+    breakout = False
+    processed = 0
+    total = 0
 
-    #are we in a data directory?
+    error_list = {"no_files":[], "no_data":[]}
+    # walk the data path to access the data sets. this is the main part of the code
+    for root, dirs, files in os.walk(base_dir):
+        path = root.split(os.sep)
+        total += 1
 
-    if "NP" in root:
-        # this if statement assumes that NP is in the leaf directory's name
+        #are we in a data directory?
 
-
-        if ("brush_NP_volume_fraction.dat" in files) and ("solvent_NP_volume_fraction.dat" in files):
-            #if the cvolume fraction files are in the directory then we can process
-            brushNPVolFrac = None
-            solvNPVolFrac = None
-
-            #read the data
-            #these datasets describe the NP volume fractions in the brush and solvent respectively at each recorded
-            # time step
-            with open(root+"/brush_NP_volume_fraction.dat", "r") as file:
-                brushNPVolFrac = [float(x) for x in file.readlines()]
-
-            with open(root + "/solvent_NP_volume_fraction.dat", "r") as file:
-                solvNPVolFrac = [float(x) for x in file.readlines()]
-
-            #make sure there is data
-            if len(solvNPVolFrac) < 10 :
-                print(root + " has no data.")
-                error_list["no_data"].append(root)
-                pass
-                continue
-
-            # make sure we have the same amount of data for both the brush and solvent
-            assert len(solvNPVolFrac) == len(brushNPVolFrac)
-
-            brush_eq = calc_equilibrium(brushNPVolFrac)
-            solv_eq = calc_equilibrium(solvNPVolFrac)
-            processed += 1
-
-            if path[-4] not in datadir:
-                datadir[path[-4]] = {}
-            if path[-3] not in datadir[path[-4]]:
-                datadir[path[-4]][path[-3]] = {}
-            if path[-2] not in datadir[path[-4]][path[-3]]:
-                datadir[path[-4]][path[-3]][path[-2]] = {}
-            if path[-1] not in datadir[path[-4]][path[-3]][path[-2]]:
-                datadir[path[-4]][path[-3]][path[-2]][path[-1]] = (solv_eq[1], brush_eq[1])
-
-            frame_file = root+"/frames_exp_test_11.Umin"+path[-4][5:]+".rad"+path[-3][4:]+".den"+path[-2][4:]+".NP"+path[-1][3:]+".xyz"
-
-        else:
-            print(root)
-            error_list["no_files"].append(root)
+        if "NP" in root:
+            # this if statement assumes that NP is in the leaf directory's name
 
 
+            if ("brush_NP_volume_fraction.dat" in files) and ("solvent_NP_volume_fraction.dat" in files):
+                #if the cvolume fraction files are in the directory then we can process
+                brushNPVolFrac = None
+                solvNPVolFrac = None
+
+                #read the data
+                #these datasets describe the NP volume fractions in the brush and solvent respectively at each recorded
+                # time step
+                with open(root+"/brush_NP_volume_fraction.dat", "r") as file:
+                    brushNPVolFrac = [float(x) for x in file.readlines()]
+
+                with open(root + "/solvent_NP_volume_fraction.dat", "r") as file:
+                    solvNPVolFrac = [float(x) for x in file.readlines()]
+
+                #make sure there is data
+                if len(solvNPVolFrac) < 10 :
+                    print(root + " has no data.")
+                    error_list["no_data"].append(root)
+                    pass
+                    continue
+
+                # make sure we have the same amount of data for both the brush and solvent
+                assert len(solvNPVolFrac) == len(brushNPVolFrac)
+
+                brush_eq = calc_equilibrium(brushNPVolFrac)
+                solv_eq = calc_equilibrium(solvNPVolFrac)
+                processed += 1
+
+                if path[-4] not in datadir:
+                    datadir[path[-4]] = {}
+                if path[-3] not in datadir[path[-4]]:
+                    datadir[path[-4]][path[-3]] = {}
+                if path[-2] not in datadir[path[-4]][path[-3]]:
+                    datadir[path[-4]][path[-3]][path[-2]] = {}
+                if path[-1] not in datadir[path[-4]][path[-3]][path[-2]]:
+                    datadir[path[-4]][path[-3]][path[-2]][path[-1]] = (solv_eq[1], brush_eq[1])
+
+                frame_file = root+"/frames_exp_test_11.Umin"+path[-4][5:]+".rad"+path[-3][4:]+".den"+path[-2][4:]+".NP"+path[-1][3:]+".xyz"
+
+            else:
+                print(root)
+                error_list["no_files"].append(root)
 
 
-print(str(processed) + " sims have values out of "+ str(total))
-print("that's " + str(100.0* processed / total) + " percent")
-Umin_list, rad_list, den_list, NP_list = get_data_keys(datadir)
-plot(datadir, Umin_list, rad_list, den_list, NP_list)
-print("error list", error_list)
-print("Done")
+
+
+    print(str(processed) + " sims have values out of "+ str(total))
+    print("that's " + str(100.0* processed / total) + " percent")
+    Umin_list, rad_list, den_list, NP_list = get_data_keys(datadir)
+    plot(datadir, Umin_list, rad_list, den_list, NP_list)
+    print("error list", error_list)
+    print("Done")
+
+if __name__ == "__main__":
+    calculate_b_v_S_graphs()
