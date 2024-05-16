@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 
 #base_dir = "/media/clayton/Seagate/experiment_data/"
-base_dir = "./exp_1"
+base_dir = "/scratch/chdavis/exp_1/NP_BRUSH/"
 processed = 0
 total = 0
 datadir = {}
@@ -16,6 +16,7 @@ rad_list = []
 den_list = []
 NP_list = []
 # traverse root directory, and list directories as dirs and files as files
+
 
 def get_data_keys(graphdata):
 #gets all the keys needed to index dictionaries for retrieving data
@@ -42,7 +43,9 @@ def get_data_keys(graphdata):
     den_list = list(den_set)
     den_list.sort()
     NP_list = list(NP_set)
+    NP_list =  [int(x[3:]) for x in NP_list]
     NP_list.sort()
+    NP_list = ["NP_"+str(x) for x in NP_list]
 
     return Umin_list, rad_list, den_list, NP_list
 def plot(datadir, Umin_list, rad_list, den_list, NP_list):
@@ -98,12 +101,12 @@ def plot(datadir, Umin_list, rad_list, den_list, NP_list):
                 ax.plot(lines[0], lines[1], label='sigma = ' + str(mod_value*(i+1)*.03))
 
 
-            ax.legend()
+            #ax.legend()
             ax.set_xlabel('Solvent NP Volume Fraction')
             ax.set_ylabel('Brush NP Volume Fraction')
             ax.set_title('Brush NP Volume Fraction Versus Solvent NP Volume Fraction \n Umin = '+ str(Umin) + ' , radius = ' + str(rad))
 
-            plt.figtext(0.5, 0.01, txt, wrap=True, horizontalalignment='center', fontsize=12)
+            #plt.figtext(1.5, 0.01, txt, wrap=True, horizontalalignment='center', fontsize=12)
             plt.show()
 
     comment = "bp"
@@ -123,7 +126,7 @@ def calc_equilibrium(data):
     points = int(len(data)*.8)
     #get the number of observations in the last 20% of data
     x_values = range(len(data[points:]))
-
+    print(len(x_values))
     #create 0th and 1st order fits for the last 20% of data points
     data0fit = np.polyfit(x_values, data[points:], 0)
     data1fit = np.polyfit(x_values, data[points:], 1)
@@ -147,27 +150,6 @@ def calc_equilibrium(data):
 
     return rValue
 
-def build_3d_animation(_file, _rad):
-    color = (.5, .5, .5)
-    frame = np.empty([1, 5], dtype=object)
-    frame = np.append(frame, np.empty([1, 5], dtype=object), axis=0) # needed for the first animation expansion with a 1: slice
-    frames = 0
-    with open(_file) as fp:
-        for line in fp:
-            if line[0] == "7":
-                frames += 1
-
-            if line[0] == "0" or line[0]== "1" or line[0]== "2":
-                if line[0] == "2":
-                    rad = _rad
-                    color = (1.0, 0.0, 0.0)
-                else:
-                    rad = 1.0
-                data = line.split("\t")
-                frame = np.append(frame, np.array([ [ float(data[1]), float(data[2]), float(data[3]), rad, color ] ]), axis=0)
-
-    bcomment = "check dims"
-
 
 #main code
 breakout = False
@@ -182,6 +164,7 @@ for root, dirs, files in os.walk(base_dir):
 
     if "NP" in root:
         # this if statement assumes that NP is in the leaf directory's name
+
 
         if ("brush_NP_volume_fraction.dat" in files) and ("solvent_NP_volume_fraction.dat" in files):
             #if the cvolume fraction files are in the directory then we can process
@@ -198,9 +181,10 @@ for root, dirs, files in os.walk(base_dir):
                 solvNPVolFrac = [float(x) for x in file.readlines()]
 
             #make sure there is data
-            if len(solvNPVolFrac) < 1 :
+            if len(solvNPVolFrac) < 10 :
                 print(root + " has no data.")
                 error_list["no_data"].append(root)
+                pass
                 continue
 
             # make sure we have the same amount of data for both the brush and solvent

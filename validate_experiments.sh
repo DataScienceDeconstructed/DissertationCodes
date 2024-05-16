@@ -27,6 +27,8 @@ fi
 
 # Get the search word from command line argument
 search_word="$1"
-
+search_dir="/scratch/chdavis/exp_1/NP_BRUSH"
 # Call the search_files function with the current directory
-search_files "$search_word" "$(pwd)"
+#search_files "$search_word" "$(pwd)"
+#echo "$search_dir"
+search_files "$search_word" $search_dir
