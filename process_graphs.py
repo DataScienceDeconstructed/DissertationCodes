@@ -55,10 +55,12 @@ def plot(datadir, Umin_list, rad_list, den_list, NP_list):
   #  NP_list = ['NP_64', 'NP_128', 'NP_256', 'NP_320', 'NP_384', 'NP_512',  'NP_768', 'NP_1024']
 
     mod_value = 3
+
     for Umin in Umin_list:
         for rad in rad_list:
             # build graph at this level
             den_line = []
+            den_values = []
             txt = "missing values"
             for i, den in enumerate(den_list):
 
@@ -93,19 +95,27 @@ def plot(datadir, Umin_list, rad_list, den_list, NP_list):
                 # record if line data is fully available i.e. nothing missing
                 if line_full:
                     den_line.append([x.copy(), y.copy()])
-
+                    den_values.append(den)
             #build plot
             fig, ax = plt.subplots()
+            print_line = True # this will print fewer lines for nicer visual
             for i, lines in enumerate(den_line):
-                ax.plot(lines[0], lines[1], label='sigma = ' + str(mod_value*(i+1)*.03))
+                print_line = not print_line
+                if print_line:
+                    #ax.plot(lines[0], lines[1], label='s = ' + str(mod_value*(i+1)*.01)[:4])
+                    ax.plot(lines[0], lines[1], label='s = ' + den_values[i][4:8])
 
 
-            #ax.legend()
+
             ax.set_xlabel('Solvent NP Volume Fraction')
             ax.set_ylabel('Brush NP Volume Fraction')
             ax.set_title('Brush NP Volume Fraction Versus Solvent NP Volume Fraction \n Umin = '+ str(Umin) + ' , radius = ' + str(rad))
 
             #plt.figtext(1.5, 0.01, txt, wrap=True, horizontalalignment='center', fontsize=12)
+            plt.figtext(1.5, 0.01, txt, wrap=True, fontsize=12)
+            ax.legend(loc='upper right')
+
+            plt.savefig(base_dir+'vfracgraphs_Umin_'+ str(Umin) + '_radius_' + str(rad)+'.png')
             plt.show()
 
     comment = "bp"
