@@ -150,12 +150,16 @@ def calc_equilibrium(data):
 
     #do t test to see if distributions are distinguishable
 
-    test_results = stats.ttest_ind(e0, e1)
+    test_results = stats.ttest_ind(e0, e1) # test with null hypothesis that they are the same
 
     # we want to be sure that distributions are really close so if there is up to a 50% chance that one distribution
     # is more extreme than the other we reject the idea that they are indistinguishable.
-    if test_results.pvalue > .5:
+    if test_results.pvalue > .5 or np.sum(e0+e1) < 1e-10:
+        # the distributions are not significantly different.
+        # we use .5 instead of 0.5 to make it easy for distributions to be distinquished.
         rValue = (True, data0fit[0])
+    else:
+        print("failed to distibguish 0th and 1st order")
 
     return rValue
 
@@ -178,6 +182,7 @@ def calculate_b_v_S_graphs():
 
         if "NP" in root:
             # this if statement assumes that NP is in the leaf directory's name
+
 
 
             if ("brush_NP_volume_fraction.dat" in files) and ("solvent_NP_volume_fraction.dat" in files):
