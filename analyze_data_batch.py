@@ -1,123 +1,179 @@
-#probably don't need this anymore it just creasts some temporary graphs and runs as a one off.
+#updated to process the new approach via laradji
+# need to process with 80% of simulation data
+# create new file with saturation values
 
 import os
-import json
-import matplotlib.pyplot as plt
-import itertools
+from ComputationalEquilibriums import ReferenceDistribution
 import numpy as np
+import sys
+from scipy import stats
 
-base_dir = "/home/chdavis/Code/mpd-md/bin/exp_test_6"
-base_dir = "/home/chdavis/Code/mpd-md/bin/exp_test_11" # fill ins
+# post process the directories with data
+base_dir = "/project/chdavis/chdavis/exp_totals/NP_BRUSH/"
+processed = 0
+total = 0
 
-if __name__ == "__main__":
-    x1_solvent = []
-    x2_solvent = []
-    x1_brush = []
-    x2_brush = []
-    c_value = []
-    labels = []
-    densities = {}
-    colors = {}
-    color_cycle= itertools.cycle(["orange","pink","blue","brown","red","grey","yellow","green","purple","black"])
-    plotline_styles =itertools.cycle( ["--","-.",":"])
+# walk the data path to access the data sets. this is the main part of the code
+# for root, dirs, files in os.walk(base_dir):
 
-    Umin = "1"
-    rad = "4"
+for root, dirs, files in os.walk(base_dir):
+    print(root, dirs)
+    error_list = {"no_files":[], "no_data":[]}
+    path = root.split(os.sep)
+    if ("35" in root.split("/")[-4]):
+        continue
 
-    #cylce through the results files
-    for (root,dirs,files) in os.walk(base_dir, topdown=True):
-        #look only in the equilibrium density files with the proper variables Umin, rad, etc.
-        if "equil_densities.dat" in files and "/Umin_"+Umin+"/rad_"+rad+"/" in root: #and "/den_1" in root:
-            fname = os.path.join(root,"equil_densities.dat")
-            #here we assign density and color dictionaries based upon the presences of variables in the file name
-            #-2 is number of NP
-            #-3 is the burch density
-            # we will use this for separating the data later.
-            c_value_anchor = fname.split('/')[-2]
-            if c_value_anchor not in colors:
-                colors[c_value_anchor]=next(color_cycle)
-            if fname.split('/')[-3] not in densities:
-                densities[fname.split('/')[-3]] = []
-            #here we parse the equilibrium data out of the equil_density files.
-            with open(fname) as myfile:
-                data = myfile.readlines()
-                #linear regression for solvent density equilibrium
-                x1_solvent.append([float(x) for x in data[1].strip('][\n').split(' ') if len(x)>0][-1])
-                # quadratic regression for solvent density equilibrium
-                x2_solvent.append([float(x) for x in data[3].strip('][\n').split(' ') if len(x)>0][-1])
-                # linear regression for brush density equilibrium
-                x1_brush.append([float(x) for x in data[5].strip('][\n').split(' ') if len(x)>0][-1])
-                # quadratic regression for solvent density equilibrium
-                x2_brush.append([float(x) for x in data[7].strip('][\n').split(' ') if len(x)>0][-1])
-#                labels.append([fname.split('/')[-3],fname.split('/')[-2]])
+    #are we in a data directory?
+    if ("NP" in root.split("/")[-1]):
+        print("root " + root)
+        dir_base = root
+        total += 1
 
-                # here we build a label for the data that can be used during plotting
-                labels.append(fname.split('/')[-3])
-                # here we append the color that will be assigned to this datapoint
-                c_value.append(colors[c_value_anchor])
-                # here we update the density dictionary to add this value where it belongs
-                densities[fname.split('/')[-3]].append([x1_solvent[-1], x1_brush[-1]])
+        # dist holds number of particles loaded in brush and floating in solvent at each time step
+        dist = ReferenceDistribution(_type="Binary", _reference=0.0, _dist=[0, 0])
+        significance_level = 0.05
+        sim_track = 0
+
+        # info_lag holds the dist objects for each time step
+        info_lag = []
+        # brushz_lag holds the brush height at each time step
+        brushz_lag = []
+        # bins for z axis profiling
+        bin_length = 10.0  # this bin length is used to cut the system height into intervals for binning
+        total_bins = int(
+            1000.0 / bin_length)  # 1000 is used because it is a sim max. i.e. the system can only have a height of 1000
+        # poly_profile holds the number of polymers at sectional slice
+        poly_profile_lag = []
+        poly_profile_current = np.zeros(total_bins, dtype=int)
+        np_profile_lag = []
+        np_profile_current = np.zeros(total_bins, dtype=int)
+        poly_avg_height_lag = []
+        poly_avg_height_lag.append(0)
+        tempheight = 0
+        monocount = 0
+        system_dimensions = [0.0, 0.0, 0.0]  # default values that will be overwritten by file data
+
+        # retrieve radius from filename and calculate NP Volume. relies on naming conventions from create_exp.sh
+        radius = float(dir_base.split("/")[-4].split("_")[-1])
+        print("radius ", radius)
+        NP_Volume = 4.0 / 3.0 * np.pi * radius * radius * radius
+        print("NP_Volume ", NP_Volume)
+
+        print("Reading Simulation Global Values")
+
+        # get information about the simulation
+        filecheck = [s for s in files if ".mpd" in s]
+        if len(filecheck) == 1:
+            filename = filecheck[0]
+        else:
+            pass
+#frames_exp_1_Umin-0-35_rad2_den0-21_NP320.xyz
+
+        with open(dir_base +"/"+ filename, 'r') as fp:
+            for i, line in enumerate(fp):
+                if i == 9:  # this is the line with the sim dimensions when MD is used to create the file.
+                    split_line = line.strip().split(" ")  # split the file line into its components
+                    system_dimensions = [float(split_line[1]), float(split_line[2]), float(split_line[3])]
+
+        # grab the number of particles and the name of the experiment from the save file
+        parts = None
+        name = None
+        print("Opening Simulation Data File")
+
+        with open(dir_base + "/frames_" + filename[:-4] + ".xyz", 'r') as fp:
+            for i, line in enumerate(fp):
+                if i == 0:
+                    parts = int(line.strip())  # the first line has the number of particles in the simulation
+                if i == 1:
+                    name = line.strip()  # I don't think we use this anymore it can probably go
+                if i > 1:
+                    break
+
+        print("processing densities")
+
+        # process the simulation file
+        with open(dir_base + "/frames_" + filename[:-4] + ".xyz", 'r') as fp:
+            for i, line in enumerate(fp):
+                split_line = line.strip().split("\t")  # split the file line into its components
+
+                # if we have a distributions save it
+                # there is a line for each particle plus a line for the number of particles and name of experiment.
+                # that's why we have (parts+2) in each frame. that means each frame can be indexed by i % (parts + 2)
+                if i % (parts + 2) == 0:
+                    if i > 0:  # skips the first time since no ditribution to process yet.
+                        # process distributions for Chi squared metric
+                        # run this for the first and last info sets.
+                        # iterative sets just show that the density growth is not exceptional.
+                        # probably need to handle it in 2^N steps.
+                        # code below needs refactor to handle multiple lag deltas.
+                        info_lag.append(dist.Distribution)
+                        # already processed one distribution so save it's max height
+                        brushz_lag.append(dist.ReferenceValue)
+                        # grab the polymer profile for the time step
+                        poly_profile_lag.append(poly_profile_current)
+                        # grab the np profile for the time step
+                        np_profile_lag.append(np_profile_current)
+                        # append the avg height list
+                        poly_avg_height_lag.append(0)
+                        monocount = 0
+
+                        # reset the distributions so that processing can continue.
+                        dist = ReferenceDistribution(_type="Binary", _reference=0.0, _dist=[0, 0])
+                        # reset the polymer profile
+                        poly_profile_current = np.zeros(total_bins)
+                        # reset the NP profile
+                        np_profile_current = np.zeros(total_bins)
+
+                # grab and record the highest z value for a polymer. This is the brush height.
+                if split_line[0] == '1':  # spilt_line[0] will always exist even on break lines with the number of particles and name of exp.
+                    # line starting with 1 is a monomer on a polymer chain
+                    # update polymer z profiles
+                    tempheight = float(split_line[3])
+
+                    bin = int(float(split_line[3]) / bin_length)
+                    poly_profile_current[bin] += 1
+                    if float(split_line[3]) > dist.ReferenceValue:  # check to see if z value is higher than current max
+                        # update brush height in distribution class
+                        dist.update_reference(float(split_line[3]))
+
+                # identify the NP inside and outside the brush
+                if split_line[0] == '2':  # Line starting with a 2 is a np
+                    # update the z profile for NPs and
+                    bin = int(float(split_line[3]) / bin_length)
+                    np_profile_current[bin] += 1
+                    # pass the z value for the NP to the distribution. It will update according to current z height
+                    dist.update_distribution(float(split_line[3]))
+
+                if split_line[0] == '0':
+                    poly_avg_height_lag[-1] = tempheight
+                    tempheight = 0
 
 
 
-    print(colors)
-    # here we select the equilibrium estimate that we will use for our plots
-    # we use the linear regression as the quadratic has offered unphysical negative numbers
-    x = x1_solvent
-    y = x1_brush
+                # technicaly it is possible that this CODE could be counting some NPs as outside the brush that are below
+                # the highet of the brush IF the NP is encountered before a polymer with a height greater than the z value
+                # of the NP is encountered after the NP; however, the brushes start in an entropiclly disadvantaged configuration
+                # of total elongation so this scenario is impossible in the first frame. Consequent frames are unlikely to
+                # suffer as the polymers' heights should all contract at roughly the same miniscule rate for each timestep.
+                # the real concern is in nonequilibrium situations when there is a great difference in the delta between
+                # brush heights between t(i) and t(i+1). talk to Laradji about this.
 
-    #here we label the graphs as appropriate
-    plt.xlabel("solvent volume fraction")
-    plt.ylabel("brush volume fraction")
-    plt.title("brush NP volume fraction as a function of solvent NP volume fraction density\n Umin = "+str(float(Umin)*-0.175)+" \n rad = "+rad+" ")
+        print("processing equilibriums")
+        print(str(len(info_lag)) + " frames in file")
 
-    #here we cycle through our datasets and plot. the scatter plot should be solvent on the x axis and brush on the y axis
-    for i in range(len(x)):
-        solvfrac = x[i]
-        brushfrac = y[i]
+        # lags = [int(2 ** c) for c in range(int(np.log2(len(info_lag) / 2)))]
+        # rValue = [-1, 0]
 
-        # approximation can lead to unphysical minor negative values because it always produces a slightly under shot value.
-        # this adjustment prevents those values
-        if x[i] < 0:
-            solvfrac = 0
-
-        if y[i] < 0:
-            brushfrac = 0
-
-        plt.scatter(solvfrac, brushfrac, color=c_value[i])
+        print("plotting datafiles")
+        # write out data of note
+        # info lag holds the distribution informaiton for each time step
+        for i, x in enumerate(info_lag):
+            print("frame " + str(i) +": "+ str(poly_avg_height_lag[i]) + "   " + str(brushz_lag[i]))
+                #fp.write(str(brushz_lag[i]) + "\n")  # max height for the brush at each timestep
 
 
-    #for i in range(len(x)):
-    #    plt.text(x[i] * (1 + 0.01), y[i] * (1 + 0.01) , str(labels[i]), fontsize=12)
-    #    densities[labels[i]].append([x[i],y[i]])
+        print("main derived value processing completed.")
 
-    for k,v in densities.items():
 
-        bfl = np.sort(np.asarray(densities[k]), axis=0)
 
-        #add trendline to plot
-        plt.plot(bfl[:,0], bfl[:,1], linestyle=next(plotline_styles))
-        with open(base_dir +'_output/'+str(Umin)+"_"+str(rad)+"/" +str(k)+'.txt', 'w') as file:
-            file.writelines( str(row[0]) + " " + str(row[1]) + "\n" for row in bfl)
 
-    plt.show()
-
-    """fig, axs = plt.subplots(2, 2)
-    axs[0, 0].plot(x, y)
-    axs[0, 0].set_title('Axis [0, 0]')
-    axs[0, 1].plot(x, y, 'tab:orange')
-    axs[0, 1].set_title('Axis [0, 1]')
-    axs[1, 0].plot(x, -y, 'tab:green')
-    axs[1, 0].set_title('Axis [1, 0]')
-    axs[1, 1].plot(x, -y, 'tab:red')
-    axs[1, 1].set_title('Axis [1, 1]')
-
-    for ax in axs.flat:
-        ax.set(xlabel='x-label', ylabel='y-label')
-
-    # Hide x labels and tick labels for top plots and y ticks for right plots.
-    for ax in axs.flat:
-        ax.label_outer()
-    """
-    print ('--------------------------------')
-	
