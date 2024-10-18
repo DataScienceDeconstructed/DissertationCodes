@@ -6,7 +6,7 @@ import os
 from ComputationalEquilibriums import ReferenceDistribution
 import numpy as np
 import sys
-from scipy import stats
+from matplotlib import pyplot as plt
 
 # post process the directories with data
 base_dir = "/project/chdavis/chdavis/exp_totals/NP_BRUSH/"
@@ -21,6 +21,7 @@ for root, dirs, files in os.walk(base_dir):
     error_list = {"no_files":[], "no_data":[]}
     path = root.split(os.sep)
     if ("35" in root.split("/")[-4]):
+        #ignore the -.35 Umins because of the PBC issue in the Z direction
         continue
 
     #are we in a data directory?
@@ -39,7 +40,7 @@ for root, dirs, files in os.walk(base_dir):
         # brushz_lag holds the brush height at each time step
         brushz_lag = []
         # bins for z axis profiling
-        bin_length = 10.0  # this bin length is used to cut the system height into intervals for binning
+        bin_length = 0.5  # this bin length is used to cut the system height into intervals for binning
         total_bins = int(
             1000.0 / bin_length)  # 1000 is used because it is a sim max. i.e. the system can only have a height of 1000
         # poly_profile holds the number of polymers at sectional slice
@@ -67,7 +68,7 @@ for root, dirs, files in os.walk(base_dir):
             filename = filecheck[0]
         else:
             pass
-#frames_exp_1_Umin-0-35_rad2_den0-21_NP320.xyz
+
 
         with open(dir_base +"/"+ filename, 'r') as fp:
             for i, line in enumerate(fp):
@@ -150,19 +151,19 @@ for root, dirs, files in os.walk(base_dir):
 
 
 
-                # technicaly it is possible that this CODE could be counting some NPs as outside the brush that are below
-                # the highet of the brush IF the NP is encountered before a polymer with a height greater than the z value
-                # of the NP is encountered after the NP; however, the brushes start in an entropiclly disadvantaged configuration
-                # of total elongation so this scenario is impossible in the first frame. Consequent frames are unlikely to
-                # suffer as the polymers' heights should all contract at roughly the same miniscule rate for each timestep.
-                # the real concern is in nonequilibrium situations when there is a great difference in the delta between
-                # brush heights between t(i) and t(i+1). talk to Laradji about this.
-
         print("processing equilibriums")
         print(str(len(info_lag)) + " frames in file")
 
-        # lags = [int(2 ** c) for c in range(int(np.log2(len(info_lag) / 2)))]
-        # rValue = [-1, 0]
+        print("getting profiles")
+        profile_data = np.array(poly_profile_lag)
+        print("profile_data\t", profile_data.shape)
+        useful_data_avg = np.mean(profile_data[int(profile_data.shape[0]*.2):,:], axis=0)
+        print("useful_data\t", useful_data_avg.shape)
+
+        fig, ax = plt.subplots()
+        ax.plot(useful_data_avg)
+
+        pass
 
         print("plotting datafiles")
         # write out data of note
