@@ -113,7 +113,7 @@ for root, dirs, files in os.walk(base_dir):
 
         loading_array = np.array(loading)
         fig, ax = plt.subplots()
-        ax.plot(loading_array[:, 1], label="Solvent")
+        ax.plot(loading_array[:, 1], label="Solvent ")
         ax.plot(loading_array[:, 0], label="Brush")
         plt.show()
 
