@@ -106,6 +106,16 @@ for root, dirs, files in os.walk(base_dir):
                                         .2,
                                         brush_top_density)
         print("top \t", top)
+        loading = brush_analysis.calc_loading(frame_file,
+                                              parts,
+                                              top,
+                                              radius)
+
+        loading_array = np.array(loading)
+        fig, ax = plt.subplots()
+        ax.plot(loading_array[:, 1], label="Solvent")
+        ax.plot(loading_array[:, 0], label="Brush")
+        plt.show()
 
 sys.exit(0)
         # # process the simulation file

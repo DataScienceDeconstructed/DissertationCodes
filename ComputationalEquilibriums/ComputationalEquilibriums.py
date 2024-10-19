@@ -1,5 +1,6 @@
 
 # Reference Distribution keeps track of how many np are in the polymer brush.
+import numpy as np
 
 class ReferenceDistribution():
 
@@ -19,13 +20,37 @@ class ReferenceDistribution():
         # update the brush height
         self.ReferenceValue = _val
 
-    def update_distribution(self, _val):
-        #look at the passed z value and determine if it is below the brush height (in the brush) or above the brush 
-        # height in the solvent
+    def calculate_ball_Vol_percentage(self,radius, h):
+        scale = 4.0/3.0* np.pi * radius * radius * radius
+        volume = np.pi*h*h/3.0*(3.0*radius - h)
+        return volume/scale
+
+    def update_distribution(self, _val, radius):
+        #look at the passed z value and determine if NP is in brush
         if _val <= self.ReferenceValue:
-            self.Distribution[0] += 1
+            #in the brush
+            if _val < self.ReferenceValue - radius:
+                #completely in brush
+                self.Distribution[0] += 1
+            else:
+                #partially in brush
+                #cap is in solvent
+                h = _val + radius - self.ReferenceValue
+                cap_vol = self.calculate_ball_Vol_percentage(radius, h)
+                self.Distribution[1] += cap_vol
+                self.Distribution[0] += 1 - cap_vol
+
         else:
-            self.Distribution[1] += 1
+            #in the solvent
+            if _val > self.ReferenceValue + radius:
+                #totally in the solvent
+                self.Distribution[1] += 1
+            else:
+                #cap in brush
+                h = radius - ( _val - self.ReferenceValue)
+                cap_vol = self.calculate_ball_Vol_percentage(radius, h)
+                self.Distribution[0] += cap_vol
+                self.Distribution[1] += 1 - cap_vol
 
 
 

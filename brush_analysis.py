@@ -36,6 +36,35 @@ def get_brush_height(filename,
         useful_data_avg = np.mean(profile_data[int(profile_data.shape[0] * equil_percent):, :], axis=0)
         top_indexes = [i for i, x in enumerate(useful_data_avg) if x < brush_top_density and i > int(1.0/ bin_length)+1]
         return top_indexes[0] * bin_length
+
+def calc_loading(filename,
+                 parts,
+                 top,
+                 radius):
+
+    info_lag = []
+    dist = ReferenceDistribution(_type="Binary", _reference=top, _dist=[0, 0])
+# process the simulation file
+    with open(filename, 'r') as fp:
+        for i, line in enumerate(fp):
+            split_line = line.strip().split("\t")  # split the file line into its components
+
+            # there is a line for each particle plus a line for the number of particles and name of experiment.
+            # that's why we have (parts+2) in each frame. that means each frame can be indexed by i % (parts + 2)
+            if i % (parts + 2) == 0:
+                if i > 0:  # skips the first time since no ditribution to process yet.
+                    #storing distribution
+                    info_lag.append(dist.Distribution)
+
+                    # reset the distributions so that processing can continue.
+                    dist = ReferenceDistribution(_type="Binary", _reference=top, _dist=[0, 0])
+
+            # identify the NP inside and outside the brush
+            if split_line[0] == '2':  # Line starting with a 2 is a np
+                # pass the z value for the NP to the distribution. It will update according to current z height
+                dist.update_distribution(float(split_line[3]), radius)
+    return info_lag
+
 # def original(filename):
 # # process the simulation file
 #     with open(dir_base + "/frames_" + filename[:-4] + ".xyz", 'r') as fp:
