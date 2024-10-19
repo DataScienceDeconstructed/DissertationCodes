@@ -3,9 +3,11 @@
 # create new file with saturation values
 
 import os
+import sys
 from ComputationalEquilibriums import ReferenceDistribution
 import numpy as np
-import sys
+import brush_analysis
+
 from matplotlib import pyplot as plt
 
 # post process the directories with data
@@ -24,7 +26,7 @@ for root, dirs, files in os.walk(base_dir):
         #ignore the -.35 Umins because of the PBC issue in the Z direction
         continue
 
-    #are we in a data directory?
+    #check to make sure you are in a directory with data.
     if ("NP" in root.split("/")[-1]):
         print("root " + root)
         dir_base = root
@@ -41,8 +43,7 @@ for root, dirs, files in os.walk(base_dir):
         brushz_lag = []
         # bins for z axis profiling
         bin_length = 0.5  # this bin length is used to cut the system height into intervals for binning
-        total_bins = int(
-            1000.0 / bin_length)  # 1000 is used because it is a sim max. i.e. the system can only have a height of 1000
+        total_bins = int(1000.0 / bin_length)  # 1000 is used because it is a sim max. i.e. the system can only have a height of 1000
         # poly_profile holds the number of polymers at sectional slice
         poly_profile_lag = []
         poly_profile_current = np.zeros(total_bins, dtype=int)
@@ -55,7 +56,7 @@ for root, dirs, files in os.walk(base_dir):
         system_dimensions = [0.0, 0.0, 0.0]  # default values that will be overwritten by file data
 
         # retrieve radius from filename and calculate NP Volume. relies on naming conventions from create_exp.sh
-        radius = float(dir_base.split("/")[-4].split("_")[-1])
+        radius = float(dir_base.split("/")[-3].split("_")[-1])
         print("radius ", radius)
         NP_Volume = 4.0 / 3.0 * np.pi * radius * radius * radius
         print("NP_Volume ", NP_Volume)
@@ -79,6 +80,11 @@ for root, dirs, files in os.walk(base_dir):
         # grab the number of particles and the name of the experiment from the save file
         parts = None
         name = None
+
+        # calculate the density for the top of the brush.
+        brush_top_density = 1.0 / system_dimensions[0] / system_dimensions[1] /bin_length
+
+
         print("Opening Simulation Data File")
 
         with open(dir_base + "/frames_" + filename[:-4] + ".xyz", 'r') as fp:
@@ -92,89 +98,96 @@ for root, dirs, files in os.walk(base_dir):
 
         print("processing densities")
 
-        # process the simulation file
-        with open(dir_base + "/frames_" + filename[:-4] + ".xyz", 'r') as fp:
-            for i, line in enumerate(fp):
-                split_line = line.strip().split("\t")  # split the file line into its components
+        frame_file = dir_base + "/frames_" + filename[:-4] + ".xyz"
+        top = brush_analysis.get_brush_height(frame_file,
+                                        parts,
+                                        total_bins,
+                                        bin_length,
+                                        .2,
+                                        brush_top_density)
+        print("top \t", top)
 
-                # if we have a distributions save it
-                # there is a line for each particle plus a line for the number of particles and name of experiment.
-                # that's why we have (parts+2) in each frame. that means each frame can be indexed by i % (parts + 2)
-                if i % (parts + 2) == 0:
-                    if i > 0:  # skips the first time since no ditribution to process yet.
-                        # process distributions for Chi squared metric
-                        # run this for the first and last info sets.
-                        # iterative sets just show that the density growth is not exceptional.
-                        # probably need to handle it in 2^N steps.
-                        # code below needs refactor to handle multiple lag deltas.
-                        info_lag.append(dist.Distribution)
-                        # already processed one distribution so save it's max height
-                        brushz_lag.append(dist.ReferenceValue)
-                        # grab the polymer profile for the time step
-                        poly_profile_lag.append(poly_profile_current)
-                        # grab the np profile for the time step
-                        np_profile_lag.append(np_profile_current)
-                        # append the avg height list
-                        poly_avg_height_lag.append(0)
-                        monocount = 0
-
-                        # reset the distributions so that processing can continue.
-                        dist = ReferenceDistribution(_type="Binary", _reference=0.0, _dist=[0, 0])
-                        # reset the polymer profile
-                        poly_profile_current = np.zeros(total_bins)
-                        # reset the NP profile
-                        np_profile_current = np.zeros(total_bins)
-
-                # grab and record the highest z value for a polymer. This is the brush height.
-                if split_line[0] == '1':  # spilt_line[0] will always exist even on break lines with the number of particles and name of exp.
-                    # line starting with 1 is a monomer on a polymer chain
-                    # update polymer z profiles
-                    tempheight = float(split_line[3])
-
-                    bin = int(float(split_line[3]) / bin_length)
-                    poly_profile_current[bin] += 1
-                    if float(split_line[3]) > dist.ReferenceValue:  # check to see if z value is higher than current max
-                        # update brush height in distribution class
-                        dist.update_reference(float(split_line[3]))
-
-                # identify the NP inside and outside the brush
-                if split_line[0] == '2':  # Line starting with a 2 is a np
-                    # update the z profile for NPs and
-                    bin = int(float(split_line[3]) / bin_length)
-                    np_profile_current[bin] += 1
-                    # pass the z value for the NP to the distribution. It will update according to current z height
-                    dist.update_distribution(float(split_line[3]))
-
-                if split_line[0] == '0':
-                    poly_avg_height_lag[-1] = tempheight
-                    tempheight = 0
-
-
-
-        print("processing equilibriums")
-        print(str(len(info_lag)) + " frames in file")
-
-        print("getting profiles")
-        profile_data = np.array(poly_profile_lag)
-        print("profile_data\t", profile_data.shape)
-        useful_data_avg = np.mean(profile_data[int(profile_data.shape[0]*.2):,:], axis=0)
-        print("useful_data\t", useful_data_avg.shape)
-
-        fig, ax = plt.subplots()
-        ax.plot(useful_data_avg)
-
-        pass
-
-        print("plotting datafiles")
-        # write out data of note
-        # info lag holds the distribution informaiton for each time step
-        for i, x in enumerate(info_lag):
-            print("frame " + str(i) +": "+ str(poly_avg_height_lag[i]) + "   " + str(brushz_lag[i]))
-                #fp.write(str(brushz_lag[i]) + "\n")  # max height for the brush at each timestep
-
-
-        print("main derived value processing completed.")
-
-
-
-
+sys.exit(0)
+        # # process the simulation file
+        # with open(dir_base + "/frames_" + filename[:-4] + ".xyz", 'r') as fp:
+        #     for i, line in enumerate(fp):
+        #         split_line = line.strip().split("\t")  # split the file line into its components
+        #
+        #         # if we have a distributions save it
+        #         # there is a line for each particle plus a line for the number of particles and name of experiment.
+        #         # that's why we have (parts+2) in each frame. that means each frame can be indexed by i % (parts + 2)
+        #         if i % (parts + 2) == 0:
+        #             if i > 0:  # skips the first time since no ditribution to process yet.
+        #                 #storing distribution
+        #                 info_lag.append(dist.Distribution)
+        #                 # already processed one distribution so save it's max height
+        #                 brushz_lag.append(dist.ReferenceValue)
+        #                 # grab the polymer profile for the time step
+        #                 poly_profile_lag.append(poly_profile_current)
+        #                 # grab the np profile for the time step
+        #                 np_profile_lag.append(np_profile_current)
+        #                 # append the avg height list
+        #                 poly_avg_height_lag.append(0)
+        #                 monocount = 0
+        #
+        #                 # reset the distributions so that processing can continue.
+        #                 dist = ReferenceDistribution(_type="Binary", _reference=0.0, _dist=[0, 0])
+        #                 # reset the polymer profile
+        #                 poly_profile_current = np.zeros(total_bins)
+        #                 # reset the NP profile
+        #                 np_profile_current = np.zeros(total_bins)
+        #
+        #         # grab and record the highest z value for a polymer. This is the brush max height.
+        #         if split_line[0] == '1':  # spilt_line[0] will always exist even on break lines with the number of particles and name of exp.
+        #             # line starting with 1 is a monomer on a polymer chain
+        #             # update polymer z profiles
+        #             tempheight = float(split_line[3])
+        #
+        #             bin = int(float(split_line[3]) / bin_length)
+        #             poly_profile_current[bin] += 1
+        #             if float(split_line[3]) > dist.ReferenceValue:  # check to see if z value is higher than current max
+        #                 # update brush height in distribution class
+        #                 dist.update_reference(float(split_line[3]))
+        #
+        #         # identify the NP inside and outside the brush
+        #         if split_line[0] == '2':  # Line starting with a 2 is a np
+        #             # update the z profile for NPs and
+        #             bin = int(float(split_line[3]) / bin_length)
+        #             np_profile_current[bin] += 1
+        #             # pass the z value for the NP to the distribution. It will update according to current z height
+        #             dist.update_distribution(float(split_line[3]))
+        #
+        #         if split_line[0] == '0':
+        #             poly_avg_height_lag[-1] = tempheight
+        #             tempheight = 0
+        #
+        #
+        #
+        # print("processing equilibriums")
+        # print(str(len(info_lag)) + " frames in file")
+        #
+        # print("getting profiles")
+        # profile_data = np.array(poly_profile_lag)
+        # print("profile_data\t", profile_data.shape)
+        # useful_data_avg = np.mean(profile_data[int(profile_data.shape[0]*.2):,:], axis=0)
+        # print("useful_data\t", useful_data_avg.shape)
+        #
+        #
+        # plt.plot(useful_data_avg[:140])
+        # plt.show()
+        #
+        # pass
+        #
+        # print("plotting datafiles")
+        # # write out data of note
+        # # info lag holds the distribution informaiton for each time step
+        # for i, x in enumerate(info_lag):
+        #     print("frame " + str(i) +": "+ str(poly_avg_height_lag[i]) + "   " + str(brushz_lag[i]))
+        #         #fp.write(str(brushz_lag[i]) + "\n")  # max height for the brush at each timestep
+        #
+        #
+        # print("main derived value processing completed.")
+        #
+        #
+        #
+        #
