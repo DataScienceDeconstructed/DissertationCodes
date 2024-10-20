@@ -29,6 +29,9 @@ for root, dirs, files in os.walk(base_dir):
     #check to make sure you are in a directory with data.
     if ("NP" in root.split("/")[-1]):
         print("root " + root)
+        num_NPs = int(root.split("/")[-1].split("_")[-1])
+        print("num NPs", num_NPs)
+
         dir_base = root
         total += 1
 
@@ -96,9 +99,10 @@ for root, dirs, files in os.walk(base_dir):
                 if i > 1:
                     break
 
-        print("processing densities")
+        print("processing brush")
 
         frame_file = dir_base + "/frames_" + filename[:-4] + ".xyz"
+        #get top of brush
         top = brush_analysis.get_brush_height(frame_file,
                                         parts,
                                         total_bins,
@@ -106,18 +110,29 @@ for root, dirs, files in os.walk(base_dir):
                                         .2,
                                         brush_top_density)
         print("top \t", top)
-        loading = brush_analysis.calc_loading(frame_file,
+        Solvent_Volume = system_dimensions[0]*system_dimensions[1]*(system_dimensions[2]-top)
+        Brush_Volume = system_dimensions[0] * system_dimensions[1] * top
+        #get NPs in brush
+        #loading = brush_analysis.calc_loading(frame_file, parts,
+                                              #top,
+                                              #radius)
+        #loading_array = np.array(loading)
+        loading_array = np.array(brush_analysis.calc_loading(frame_file,
                                               parts,
                                               top,
-                                              radius)
-
-        loading_array = np.array(loading)
+                                              radius,
+                                              num_NPs))
         fig, ax = plt.subplots()
-        ax.plot(loading_array[:, 1], label="Solvent ")
-        ax.plot(loading_array[:, 0], label="Brush")
+        ax.plot(loading_array[:, 1]*NP_Volume/Solvent_Volume, color=(0,0,1), label="Solvent")
+        ax2 = ax.twinx()  # secondary axis
+        ax2.plot(loading_array[:, 0]*NP_Volume/Brush_Volume, color=(1,0,0), label="Brush")
+
+
+
+
         plt.show()
 
-sys.exit(0)
+        sys.exit(0)
         # # process the simulation file
         # with open(dir_base + "/frames_" + filename[:-4] + ".xyz", 'r') as fp:
         #     for i, line in enumerate(fp):
