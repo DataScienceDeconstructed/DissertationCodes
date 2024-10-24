@@ -112,6 +112,8 @@ for root, dirs, files in os.walk(base_dir):
         print("top \t", top)
         Solvent_Volume = system_dimensions[0]*system_dimensions[1]*(system_dimensions[2]-top)
         Brush_Volume = system_dimensions[0] * system_dimensions[1] * top
+        print("solvent volume\t", Solvent_Volume)
+        print("brush volume\t", Brush_Volume)
         #get NPs in brush
         #loading = brush_analysis.calc_loading(frame_file, parts,
                                               #top,
@@ -122,17 +124,23 @@ for root, dirs, files in os.walk(base_dir):
                                               top,
                                               radius,
                                               num_NPs))
-        fig, ax = plt.subplots()
-        ax.plot(loading_array[:, 1]*NP_Volume/Solvent_Volume, color=(0,0,1), label="Solvent")
-        ax2 = ax.twinx()  # secondary axis
-        ax2.plot(loading_array[:, 0]*NP_Volume/Brush_Volume, color=(1,0,0), label="Brush")
+        loading_array[:,1] = loading_array[:, 1] * NP_Volume / Solvent_Volume
+        loading_array[:,0] = loading_array[:, 0] * NP_Volume / Brush_Volume
 
+        with open(dir_base + "/loading_solv.dat", 'w') as fp:
+            np.savetxt(fp, loading_array[:,1], fmt='%.6e', delimiter=' ', newline='\n', header=str(top), footer='', comments='# ',
+                      encoding=None)
+        with open(dir_base + "/loading_brush.dat", 'w') as fp:
+            np.savetxt(fp, loading_array[:,0], fmt='%.6e', delimiter=' ', newline='\n', header=str(top), footer='', comments='# ',
+                      encoding=None)
 
+        # fig, ax = plt.subplots()
+        # ax.plot(loading_array[:, 1], color=(0,0,1), label="Solvent")
+        # ax2 = ax.twinx()  # secondary axis
+        # ax2.plot(loading_array[:, 0], color=(1,0,0), label="Brush")
+        # plt.show()
 
-
-        plt.show()
-
-        sys.exit(0)
+        #sys.exit(0)
         # # process the simulation file
         # with open(dir_base + "/frames_" + filename[:-4] + ".xyz", 'r') as fp:
         #     for i, line in enumerate(fp):

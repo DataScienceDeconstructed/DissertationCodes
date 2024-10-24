@@ -74,17 +74,17 @@ def calc_loading(filename,
             if split_line[0] == '2':  # Line starting with a 2 is a np
                 # pass the z value for the NP to the distribution. It will update according to current z height
                 dist.update_distribution(float(split_line[3]), radius)
-                R_sum[NP_index] += np.array([float(split_line[1]),
-                                            float(split_line[2]),
-                                            float(split_line[3])])
-                R2d_sum[NP_index] += np.array([float(split_line[1])*float(split_line[1]) +
-                                            float(split_line[2])*float(split_line[2]) +
-                                            float(split_line[3])*float(split_line[3])])
-                NP_index += 1
-    R_avg = R_sum / len(info_lag)
-    R2d_avg = R2d_sum / len(info_lag)
-    Ravg_2d = np.sum(R_avg * R_avg, axis=1)
-    Rstd = np.sqrt(  np.transpose(R2d_avg) - Ravg_2d)
+    #             R_sum[NP_index] += np.array([float(split_line[1]),
+    #                                         float(split_line[2]),
+    #                                         float(split_line[3])])
+    #             R2d_sum[NP_index] += np.array([float(split_line[1])*float(split_line[1]) +
+    #                                         float(split_line[2])*float(split_line[2]) +
+    #                                         float(split_line[3])*float(split_line[3])])
+    #             NP_index += 1
+    # R_avg = R_sum / len(info_lag)
+    # R2d_avg = R2d_sum / len(info_lag)
+    # Ravg_2d = np.sum(R_avg * R_avg, axis=1)
+    # Rstd = np.sqrt(  np.transpose(R2d_avg) - Ravg_2d)
 
     return info_lag
 
