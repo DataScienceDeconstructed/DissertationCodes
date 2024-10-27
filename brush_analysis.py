@@ -8,7 +8,9 @@ def get_brush_height(filename,
                      total_bins,    # total number of bins
                      bin_length,     # length of the bins
                      equil_percent,   # 1 minus what percentage of the simulation time to include in the calculation
-                     brush_top_density):
+                     brush_top_density,
+                     save_to_dir=False,
+                     dir_base=""):
 # process the simulation file
     poly_profile_lag = []
     poly_profile_current = np.zeros(total_bins, dtype=int)
@@ -34,6 +36,13 @@ def get_brush_height(filename,
 
         profile_data = np.array(poly_profile_lag)
         useful_data_avg = np.mean(profile_data[int(profile_data.shape[0] * equil_percent):, :], axis=0)
+
+        if (save_to_dir):
+            with open(dir_base + "/profile_brush.dat", 'w') as fp:
+                np.savetxt(fp, useful_data_avg, fmt='%.6e', delimiter=' ', newline='\n', header='', footer='',
+                           comments='# ',
+                           encoding=None)
+
         top_indexes = [i for i, x in enumerate(useful_data_avg) if x < brush_top_density and i > int(1.0/ bin_length)+1]
         return top_indexes[0] * bin_length
 

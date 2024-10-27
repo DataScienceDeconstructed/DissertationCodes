@@ -108,31 +108,31 @@ for root, dirs, files in os.walk(base_dir):
                                         total_bins,
                                         bin_length,
                                         .2,
-                                        brush_top_density)
+                                        brush_top_density,
+                                              save_to_dir=True,
+                                              dir_base=dir_base)
         print("top \t", top)
         Solvent_Volume = system_dimensions[0]*system_dimensions[1]*(system_dimensions[2]-top)
         Brush_Volume = system_dimensions[0] * system_dimensions[1] * top
         print("solvent volume\t", Solvent_Volume)
         print("brush volume\t", Brush_Volume)
-        #get NPs in brush
-        #loading = brush_analysis.calc_loading(frame_file, parts,
-                                              #top,
-                                              #radius)
-        #loading_array = np.array(loading)
-        loading_array = np.array(brush_analysis.calc_loading(frame_file,
-                                              parts,
-                                              top,
-                                              radius,
-                                              num_NPs))
-        loading_array[:,1] = loading_array[:, 1] * NP_Volume / Solvent_Volume
-        loading_array[:,0] = loading_array[:, 0] * NP_Volume / Brush_Volume
 
-        with open(dir_base + "/loading_solv.dat", 'w') as fp:
-            np.savetxt(fp, loading_array[:,1], fmt='%.6e', delimiter=' ', newline='\n', header=str(top), footer='', comments='# ',
-                      encoding=None)
-        with open(dir_base + "/loading_brush.dat", 'w') as fp:
-            np.savetxt(fp, loading_array[:,0], fmt='%.6e', delimiter=' ', newline='\n', header=str(top), footer='', comments='# ',
-                      encoding=None)
+        #get NPs in brush
+
+        # loading_array = np.array(brush_analysis.calc_loading(frame_file,
+        #                                       parts,
+        #                                       top,
+        #                                       radius,
+        #                                       num_NPs))
+        # loading_array[:,1] = loading_array[:, 1] * NP_Volume / Solvent_Volume
+        # loading_array[:,0] = loading_array[:, 0] * NP_Volume / Brush_Volume
+        #
+        # with open(dir_base + "/loading_solv.dat", 'w') as fp:
+        #     np.savetxt(fp, loading_array[:,1], fmt='%.6e', delimiter=' ', newline='\n', header=str(top), footer='', comments='# ',
+        #               encoding=None)
+        # with open(dir_base + "/loading_brush.dat", 'w') as fp:
+        #     np.savetxt(fp, loading_array[:,0], fmt='%.6e', delimiter=' ', newline='\n', header=str(top), footer='', comments='# ',
+        #               encoding=None)
 
         # fig, ax = plt.subplots()
         # ax.plot(loading_array[:, 1], color=(0,0,1), label="Solvent")
