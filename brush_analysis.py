@@ -97,6 +97,19 @@ def calc_loading(filename,
 
     return info_lag
 
+def retrieve_height(dir_base
+                 ):
+    height = 0
+    count = 0
+    data = []
+    with open(dir_base + "/loading_brush.dat", 'r') as fp:
+        height = fp.readline()
+
+    with open(dir_base + "/loading_solv.dat", 'r') as fp:
+        data = fp.readlines()
+    data = [float(x) for x in data if '#' not in x]
+    return (float(height[1:]), np.mean(np.array(data[int(len(data)*.2):])))
+
 # def original(filename):
 # # process the simulation file
 #     with open(dir_base + "/frames_" + filename[:-4] + ".xyz", 'r') as fp:

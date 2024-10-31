@@ -40,7 +40,7 @@ mapfile -t slack < <(head -n 2 "$slack_file")
 
 #name the experiment
 exp_data='/scratch/chdavis'
-exp_name='exp_1_b'
+exp_name='exp_2_a'
 exp_type='NP_BRUSH'
 exp_dir="$exp_data/$exp_name/$exp_type"
 # Check if the directory exists
@@ -133,7 +133,7 @@ fi
 #spec="$base_dir/simulation_specs.sim"
 #spec="$base_dir/brushs03d04dfa-a56d-4014-937a-bf94d5a26a0b.sim"
 #spec="$base_dir/brushs_Umin35_r2_extendedad23bbc1-4469-437b-a8c1-cc5a056cbcd5.sim"
-spec="$base_dir/brushs_Umin175_r4_extended02458548-16c1-492c-8ef8-5ad6e905af37.sim"
+spec="$base_dir/brushs_Umin1_r2c1fd98db-34c9-4cd9-bdc3-12f59dfa1c80.sim"
 # Check if the file exists
 if [ ! -f "$spec" ]; then
     echo "sim spec file not found: $spec"
@@ -207,7 +207,7 @@ while IFS=' ' read -r line Uvalue radius aDen nanos; do
 		    echo "echo 'updating simulation gamma and time files' " >> ./basesim.sh
 		    echo "$gamma_adjust $file_name 1.0" >> ./basesim.sh
         echo "$time_adjust $file_name 0 100000" >> ./basesim.sh
-		    echo "$int_adjust $file_name 1000 100" >> ./basesim.sh
+		    echo "$int_adjust $file_name 100 100" >> ./basesim.sh
         echo "$mpd_dir/MD $file_name" >> ./basesim.sh #add processing to submission file
 
 
