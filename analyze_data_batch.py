@@ -12,6 +12,7 @@ from matplotlib import pyplot as plt
 
 # post process the directories with data
 base_dir = "/project/chdavis/chdavis/exp_totals/NP_BRUSH/"
+base_dir = "/scratch/chdavis/exp_2_a/NP_BRUSH"
 processed = 0
 total = 0
 
@@ -25,7 +26,7 @@ for root, dirs, files in os.walk(base_dir):
     print(root, dirs)
     error_list = {"no_files":[], "no_data":[]}
     path = root.split(os.sep)
-    if ("35" in root.split("/")[-4]):
+    if ("35" in root.split("/")[-4]) or ("BRUSH" in root.split("/")[-1]):
         #ignore the -.35 Umins because of the PBC issue in the Z direction
         continue
 
@@ -92,7 +93,7 @@ for root, dirs, files in os.walk(base_dir):
 
         # calculate the density for the top of the brush.
         brush_top_density = 1.0 / system_dimensions[0] / system_dimensions[1] /bin_length
-        primary_process = False
+        primary_process = True
 
         if primary_process :
             print("Opening Simulation Data File")
