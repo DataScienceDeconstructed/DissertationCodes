@@ -11,8 +11,12 @@ import brush_analysis
 from matplotlib import pyplot as plt
 
 # post process the directories with data
-base_dir = "/project/chdavis/chdavis/exp_totals/NP_BRUSH/"
-base_dir = "/scratch/chdavis/exp_2_a/NP_BRUSH"
+#base_dir = "/project/chdavis/chdavis/exp_totals/NP_BRUSH/"
+#base_dir = "/scratch/chdavis/exp_2_a/NP_BRUSH"
+#base_dir = "/scratch/chdavis/exp_2_b/NP_BRUSH"
+#base_dir = "/scratch/chdavis/exp_2_c/NP_BRUSH"
+#base_dir = "/scratch/chdavis/exp_2_d/NP_BRUSH"
+base_dir = "/scratch/chdavis/exp_2_e/NP_BRUSH"
 processed = 0
 total = 0
 

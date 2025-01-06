@@ -40,7 +40,7 @@ mapfile -t slack < <(head -n 2 "$slack_file")
 
 #name the experiment
 exp_data='/scratch/chdavis'
-exp_name='exp_2_a'
+exp_name='exp_2_e'
 exp_type='NP_BRUSH'
 exp_dir="$exp_data/$exp_name/$exp_type"
 # Check if the directory exists
@@ -133,7 +133,11 @@ fi
 #spec="$base_dir/simulation_specs.sim"
 #spec="$base_dir/brushs03d04dfa-a56d-4014-937a-bf94d5a26a0b.sim"
 #spec="$base_dir/brushs_Umin35_r2_extendedad23bbc1-4469-437b-a8c1-cc5a056cbcd5.sim"
-spec="$base_dir/brushs_Umin1_r2c1fd98db-34c9-4cd9-bdc3-12f59dfa1c80.sim"
+#spec="$base_dir/brushs_Umin1_r2c1fd98db-34c9-4cd9-bdc3-12f59dfa1c80.sim"
+#spec="$base_dir/brushs_var_Umin1_r2bf52bec7-53e7-4b0d-a326-349e09813c4c.sim"
+#spec="$base_dir/brushs_Umin1_r278b43740-daf3-4184-8b99-f3b6c328a3e6.sim"
+#spec="$base_dir/brushs_Umin075_r234820025-d03b-4cef-94a9-c3f4503b6d56.sim"
+spec="$base_dir/brushs_Umin01_exp_r2a8d09447-5994-4f52-b306-1844a1c7045d.sim"
 # Check if the file exists
 if [ ! -f "$spec" ]; then
     echo "sim spec file not found: $spec"
