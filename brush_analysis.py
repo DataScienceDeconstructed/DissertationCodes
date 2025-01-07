@@ -11,11 +11,12 @@ def get_brush_height(filename,
                      brush_top_density,
                      save_to_dir=False,
                      dir_base=""):
+
 # process the simulation file
     poly_profile_lag = []
     poly_profile_current = np.zeros(total_bins, dtype=int)
 
-    #with open(dir_base + "/frames_" + filename[:-4] + ".xyz", 'r') as fp:
+
     with open(filename, 'r') as fp:
         for i, line in enumerate(fp):
             split_line = line.strip().split("\t")  # split the file line into its components
@@ -50,23 +51,17 @@ def calc_loading(filename,
                  parts,
                  top,
                  radius,
-                 num_NPs):
+                 total_bins,
+                 bin_length):
 
     info_lag = []
     dist = ReferenceDistribution(_type="Binary", _reference=top, _dist=[0, 0])
-    R_sum = arr = np.zeros((num_NPs, 3))
-    R2d_sum = arr = np.zeros((num_NPs, 1))
-    NP_index = 0
+    np_profile_current = np.zeros(total_bins)
+    returndict = {}
 # process the simulation file
     with open(filename, 'r') as fp:
         for i, line in enumerate(fp):
             split_line = line.strip().split("\t")  # split the file line into its components
-
-            if i == 50:
-                #reset R calculations after equilibrium
-                # this is just a test
-                R_sum = arr = np.zeros((num_NPs, 3))
-                R2d_sum = arr = np.zeros((num_NPs, 1))
 
             # there is a line for each particle plus a line for the number of particles and name of experiment.
             # that's why we have (parts+2) in each frame. that means each frame can be indexed by i % (parts + 2)
@@ -74,28 +69,20 @@ def calc_loading(filename,
                 if i > 0:  # skips the first time since no ditribution to process yet.
                     #storing distribution
                     info_lag.append(dist.Distribution)
-
                     # reset the distributions so that processing can continue.
                     dist = ReferenceDistribution(_type="Binary", _reference=top, _dist=[0, 0])
-                    NP_index = 0
+                    #reset histogram
+                    np_profile_current = np.zeros(total_bins)
 
             # identify the NP inside and outside the brush
             if split_line[0] == '2':  # Line starting with a 2 is a np
                 # pass the z value for the NP to the distribution. It will update according to current z height
                 dist.update_distribution(float(split_line[3]), radius)
-    #             R_sum[NP_index] += np.array([float(split_line[1]),
-    #                                         float(split_line[2]),
-    #                                         float(split_line[3])])
-    #             R2d_sum[NP_index] += np.array([float(split_line[1])*float(split_line[1]) +
-    #                                         float(split_line[2])*float(split_line[2]) +
-    #                                         float(split_line[3])*float(split_line[3])])
-    #             NP_index += 1
-    # R_avg = R_sum / len(info_lag)
-    # R2d_avg = R2d_sum / len(info_lag)
-    # Ravg_2d = np.sum(R_avg * R_avg, axis=1)
-    # Rstd = np.sqrt(  np.transpose(R2d_avg) - Ravg_2d)
+                #update histogram
+                np_profile_current[int(float(split_line[3])/bin_length)] += 1
 
-    return info_lag
+    returndict = {"loading": info_lag, "np_profile": np_profile_current}
+    return returndict
 
 def retrieve_height(dir_base
                  ):
