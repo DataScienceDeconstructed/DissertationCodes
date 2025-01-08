@@ -154,6 +154,7 @@ for root, dirs, files in os.walk(base_dir):
                 np.savetxt(fp, loading_array[:,0], fmt='%.6e', delimiter=' ', newline='\n', header=str(top), footer='', comments='# ',
                           encoding=None)
 
+            #todo use np columnstack to put in the top of the brush for the profile
             with open(dir_base + "/z_profile.dat", 'w') as fp:
                 np.savetxt(fp, np_profile_current, fmt='%.6e', delimiter=' ', newline='\n', header=str(top), footer='', comments='# ',
                           encoding=None)
