@@ -56,6 +56,7 @@ for root, dirs, files in os.walk(base_dir):
         # bins for z axis profiling
         bin_length = 0.5  # this bin length is used to cut the system height into intervals for binning
         total_bins = int(1000.0 / bin_length)  # 1000 is used because it is a sim max. i.e. the system can only have a height of 1000
+        bin_values = np.asarray([x*bin_length  for x in range(total_bins)])
         # poly_profile holds the number of polymers at sectional slice
         poly_profile_lag = []
         poly_profile_current = np.zeros(total_bins, dtype=int)
@@ -154,9 +155,15 @@ for root, dirs, files in os.walk(base_dir):
                 np.savetxt(fp, loading_array[:,0], fmt='%.6e', delimiter=' ', newline='\n', header=str(top), footer='', comments='# ',
                           encoding=None)
 
-            #todo use np columnstack to put in the top of the brush for the profile
             with open(dir_base + "/z_profile.dat", 'w') as fp:
                 np.savetxt(fp, np_profile_current, fmt='%.6e', delimiter=' ', newline='\n', header=str(top), footer='', comments='# ',
+                          encoding=None)
+            #save a file with profile data
+            brush_top = np.zeros(total_bins, dtype=np)
+            brush_top[int(top//bin_length)] += 20
+            z_data = np.column_stack((bin_values, np_profile_current, brush_top))
+            with open(dir_base + "/z_data.dat", 'w') as fp:
+                np.savetxt(fp, z_data, fmt='%.6e', delimiter=' ', newline='\n', header=str(top), footer='', comments='# ',
                           encoding=None)
 
             # fig, ax = plt.subplots()

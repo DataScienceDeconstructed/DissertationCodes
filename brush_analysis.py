@@ -81,6 +81,7 @@ def calc_loading(filename,
                 #update histogram
                 np_profile_current[int(float(split_line[3])/bin_length)] += 1
 
+    #the np_profile_current needs to be an average
     returndict = {"loading": info_lag, "np_profile": np_profile_current}
     return returndict
 
