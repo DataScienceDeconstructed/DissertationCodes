@@ -57,6 +57,8 @@ def calc_loading(filename,
     info_lag = []
     dist = ReferenceDistribution(_type="Binary", _reference=top, _dist=[0, 0])
     np_profile_current = np.zeros(total_bins)
+    profile_avg = np.zeros((20,total_bins))
+    avg_count = 0
     returndict = {}
 # process the simulation file
     with open(filename, 'r') as fp:
@@ -72,6 +74,10 @@ def calc_loading(filename,
                     # reset the distributions so that processing can continue.
                     dist = ReferenceDistribution(_type="Binary", _reference=top, _dist=[0, 0])
                     #reset histogram
+                    profile_avg[avg_count,:] = np_profile_current
+                    avg_count += 1
+                    if avg_count == 20:
+                        avg_count = 0
                     np_profile_current = np.zeros(total_bins)
 
             # identify the NP inside and outside the brush
@@ -82,7 +88,7 @@ def calc_loading(filename,
                 np_profile_current[int(float(split_line[3])/bin_length)] += 1
 
     #the np_profile_current needs to be an average
-    returndict = {"loading": info_lag, "np_profile": np_profile_current}
+    returndict = {"loading": info_lag, "np_profile": np.mean(profile_avg, axis=0)}
     return returndict
 
 def retrieve_height(dir_base
