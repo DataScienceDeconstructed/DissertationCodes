@@ -145,9 +145,11 @@ for root, dirs, files in os.walk(base_dir):
                                                   bin_length
                                                   )
             loading_array = np.array(returndict["loading"])
-            np_profile_current = np.array(returndict["np_profile"])
             loading_array[:, 1] = loading_array[:, 1] * NP_Volume / Solvent_Volume
             loading_array[:, 0] = loading_array[:, 0] * NP_Volume / Brush_Volume
+
+            np_profile_current = np.array(returndict["np_profile"])
+            poly_profile_current = np.array(returndict["poly_profile"])
 
             with open(dir_base + "/loading_solv.dat", 'w') as fp:
                 np.savetxt(fp, loading_array[:,1], fmt='%.6e', delimiter=' ', newline='\n', header=str(top), footer='', comments='# ',
@@ -159,12 +161,15 @@ for root, dirs, files in os.walk(base_dir):
             with open(dir_base + "/z_profile.dat", 'w') as fp:
                 np.savetxt(fp, np_profile_current, fmt='%.6e', delimiter=' ', newline='\n', header=str(top), footer='', comments='# ',
                           encoding=None)
+
             #save a file with profile data
+            #record the top of the brush and system
+            # use 1 because things are normalized to a pdf for the profiles
             brush_top = np.zeros(total_bins, dtype=np)
-            brush_top[int(top//bin_length)] += 20
-            brush_top[int(system_dimensions[2]//bin_length)] += 20
-            z_data = np.column_stack((bin_values, np_profile_current, brush_top))
-            with open(dir_base + "/z_data.dat", 'w') as fp:
+            brush_top[int(top//bin_length)] += 1
+            brush_top[int(system_dimensions[2]//bin_length)] += 1
+            z_data = np.column_stack((bin_values, np_profile_current, poly_profile_current, brush_top))
+            with open(dir_base + "/profile_data.dat", 'w') as fp:
                 np.savetxt(fp, z_data, fmt='%.6e', delimiter=' ', newline='\n', header=str(top), footer='', comments='# ',
                           encoding=None)
 
