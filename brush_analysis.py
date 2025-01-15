@@ -52,12 +52,15 @@ def calc_loading(filename,
                  top,
                  radius,
                  total_bins,
-                 bin_length):
+                 bin_length,
+                 avg_timesteps=20):
 
     info_lag = []
     dist = ReferenceDistribution(_type="Binary", _reference=top, _dist=[0, 0])
     np_profile_current = np.zeros(total_bins)
-    profile_avg = np.zeros((20,total_bins))
+    poly_profile_current = np.zeros(total_bins)
+    np_profile_avg = np.zeros((avg_timesteps,total_bins))
+    poly_profile_avg = np.zeros((avg_timesteps, total_bins))
     avg_count = 0
     returndict = {}
 # process the simulation file
@@ -74,11 +77,18 @@ def calc_loading(filename,
                     # reset the distributions so that processing can continue.
                     dist = ReferenceDistribution(_type="Binary", _reference=top, _dist=[0, 0])
                     #reset histogram
-                    profile_avg[avg_count,:] = np_profile_current
+                    np_profile_avg[avg_count,:] = np_profile_current
+                    poly_profile_avg[avg_count, :] = poly_profile_current
                     avg_count += 1
-                    if avg_count == 20:
+                    if avg_count == avg_timesteps:
                         avg_count = 0
                     np_profile_current = np.zeros(total_bins)
+                    poly_profile_current = np.zeros(total_bins)
+
+                    # identify the NP inside and outside the brush
+            if split_line[0] == '1':  # Line starting with a 1 is a monomer
+                # update histogram
+                poly_profile_current[int(float(split_line[3]) / bin_length)] += 1
 
             # identify the NP inside and outside the brush
             if split_line[0] == '2':  # Line starting with a 2 is a np
@@ -87,8 +97,13 @@ def calc_loading(filename,
                 #update histogram
                 np_profile_current[int(float(split_line[3])/bin_length)] += 1
 
-    #the np_profile_current needs to be an average
-    returndict = {"loading": info_lag, "np_profile": np.mean(profile_avg, axis=0)}
+    #conver the profiles to density functions along the z axis
+    np_profile_result = np.mean(np_profile_avg, axis=0)
+    np_profile_result = np_profile_result / np.sum(np_profile_result)
+    poly_profile_result = np.mean(poly_profile_avg, axis=0)
+    poly_profile_result = poly_profile_result / np.sum(poly_profile_result)
+
+    returndict = {"loading": info_lag, "np_profile": np_profile_result, "poly_profile": poly_profile_result}
     return returndict
 
 def retrieve_height(dir_base

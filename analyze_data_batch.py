@@ -17,7 +17,8 @@ from matplotlib import pyplot as plt
 #base_dir = "/scratch/chdavis/exp_2_c/NP_BRUSH"
 #base_dir = "/scratch/chdavis/exp_2_d/NP_BRUSH"
 #base_dir = "/scratch/chdavis/exp_2_e/NP_BRUSH"
-base_dir = "/scratch/chdavis/test/NP_BRUSH"
+base_dir = "/scratch/chdavis/exp_2_f/NP_BRUSH"
+#base_dir = "/scratch/chdavis/test/NP_BRUSH"
 processed = 0
 total = 0
 
@@ -161,6 +162,7 @@ for root, dirs, files in os.walk(base_dir):
             #save a file with profile data
             brush_top = np.zeros(total_bins, dtype=np)
             brush_top[int(top//bin_length)] += 20
+            brush_top[int(system_dimensions[2]//bin_length)] += 20
             z_data = np.column_stack((bin_values, np_profile_current, brush_top))
             with open(dir_base + "/z_data.dat", 'w') as fp:
                 np.savetxt(fp, z_data, fmt='%.6e', delimiter=' ', newline='\n', header=str(top), footer='', comments='# ',
