@@ -151,14 +151,19 @@ for root, dirs, files in os.walk(base_dir):
             np_profile_current = np.array(returndict["np_profile"])
             poly_profile_current = np.array(returndict["poly_profile"])
 
-            with open(dir_base + "/loading_solv.dat", 'w') as fp:
+            results_dir = "/post"
+            if not os.path.exists(dir_base + results_dir):
+                os.makedirs(dir_base + results_dir)
+
+
+            with open(dir_base + results_dir+ "/loading_solv.dat", 'w') as fp:
                 np.savetxt(fp, loading_array[:,1], fmt='%.6e', delimiter=' ', newline='\n', header=str(top), footer='', comments='# ',
                           encoding=None)
-            with open(dir_base + "/loading_brush.dat", 'w') as fp:
+            with open(dir_base + results_dir+ "/loading_brush.dat", 'w') as fp:
                 np.savetxt(fp, loading_array[:,0], fmt='%.6e', delimiter=' ', newline='\n', header=str(top), footer='', comments='# ',
                           encoding=None)
 
-            with open(dir_base + "/z_profile.dat", 'w') as fp:
+            with open(dir_base + results_dir +"/z_profile.dat", 'w') as fp:
                 np.savetxt(fp, np_profile_current, fmt='%.6e', delimiter=' ', newline='\n', header=str(top), footer='', comments='# ',
                           encoding=None)
 
@@ -169,7 +174,7 @@ for root, dirs, files in os.walk(base_dir):
             brush_top[int(top//bin_length)] += 1
             brush_top[int(system_dimensions[2]//bin_length)] += 1
             z_data = np.column_stack((bin_values, np_profile_current, poly_profile_current, brush_top))
-            with open(dir_base + "/profile_data.dat", 'w') as fp:
+            with open(dir_base + results_dir + "/profile_data.dat", 'w') as fp:
                 np.savetxt(fp, z_data, fmt='%.6e', delimiter=' ', newline='\n', header=str(top), footer='', comments='# ',
                           encoding=None)
 
