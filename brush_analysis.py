@@ -47,6 +47,73 @@ def get_brush_height(filename,
         top_indexes = [i for i, x in enumerate(useful_data_avg) if x < brush_top_density and i > int(1.0/ bin_length)+1]
         return top_indexes[0] * bin_length
 
+def get_brush_height_inflection(filename,
+                     parts,         # particles in the simulation
+                     total_bins,    # total number of bins
+                     bin_length,     # length of the bins
+                     equil_percent,   # 1 minus what percentage of the simulation time to include in the calculation
+                     brush_top_density,
+                     save_to_dir=False,
+                     dir_base=""):
+
+# process the simulation file
+    poly_profile_lag = []
+    poly_profile_current = np.zeros(total_bins, dtype=int)
+
+
+    with (open(filename, 'r') as fp):
+        for i, line in enumerate(fp):
+            split_line = line.strip().split("\t")  # split the file line into its components
+
+            # there is a line for each particle plus a line for the number of particles and name of experiment.
+            # that's why we have (parts+2) in each frame. that means each frame can be indexed by i % (parts + 2)
+            if i % (parts + 2) == 0:
+                if i > 0:  # skips the first time since no data to save yet.
+                    # add the polymer profile for the time step to the array holding the rest.
+                    poly_profile_lag.append(poly_profile_current)
+                    # reset the polymer profile
+                    poly_profile_current = np.zeros(total_bins)
+
+            if split_line[0] == '1':  # spilt_line[0] will always exist even on break lines with the number of particles and name of exp.
+                #1 is the code for monomer. add this monomer to the current polymer profile.
+                bin = int(float(split_line[3]) / bin_length)
+                poly_profile_current[bin] += 1
+
+        #with all polymer profiles available
+        profile_data = np.array(poly_profile_lag)
+        #takes the percentage of the polymers that happen after equilibrium and averages them together.
+        useful_data_avg = np.mean(profile_data[int(profile_data.shape[0] * equil_percent):, :], axis=0)
+        #take 1st and section direivative of profile
+        grad_useful_data_avg = np.gradient(useful_data_avg)
+        grad_2 = np.gradient(grad_useful_data_avg)
+        zero_crossings = np.where(np.diff(np.signbit(grad_2)))[0]
+
+        # Get the sign of the differences
+        signs = np.sign(grad_useful_data_avg)
+        # Calculate the second differences of the sign array
+        peaks = np.diff(signs)
+        z_values = np.asarray([x*bin_length  for x in range(total_bins)])
+
+        inflection_point = np.zeros(len(z_values))
+        grad_1_min = np.argmin(grad_useful_data_avg)
+        assert(grad_2[grad_1_min - 1] < 0.0 < grad_2[grad_1_min + 1] and
+               grad_2[grad_1_min-2] < 0.0 and
+               grad_2[grad_1_min+2] > 0.0)
+        inflection_point[grad_1_min] += 500
+        profiles = np.column_stack((z_values,
+                                    useful_data_avg,
+                                    grad_useful_data_avg,
+                                    grad_2,
+                                    inflection_point
+                                    ))
+        if (save_to_dir):
+            with open(dir_base + "/brush_profile.dat", 'w') as fp:
+                np.savetxt(fp, profiles, fmt='%.6e', delimiter=' ', newline='\n', header='', footer='',
+                           comments='# ',
+                           encoding=None)
+
+
+        return  grad_1_min * bin_length
 def calc_loading(filename,
                  parts,
                  top,

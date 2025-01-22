@@ -91,10 +91,11 @@ for root, dirs, files in os.walk(base_dir):
 
         # get information about the simulation
         filecheck = [s for s in files if ".mpd" in s]
+
         if len(filecheck) == 1:
             filename = filecheck[0]
         else:
-            pass
+            pass # why is this else clause here?
 
 
         with open(dir_base +"/"+ filename, 'r') as fp:
@@ -110,7 +111,9 @@ for root, dirs, files in os.walk(base_dir):
         # calculate the density for the top of the brush. If the density is less than this on average
         # we are at the top of the brush
         brush_top_density = 1.0 / system_dimensions[0] / system_dimensions[1] /bin_length
-        primary_process = True
+
+
+        primary_process = True # primary process holds standard processing. the else clause is for experiments
 
         if primary_process :
             print("Opening Simulation Data File")
@@ -128,7 +131,7 @@ for root, dirs, files in os.walk(base_dir):
 
             frame_file = dir_base + "/frames_" + filename[:-4] + ".xyz"
             #get top of brush
-            top = brush_analysis.get_brush_height(frame_file,
+            top = brush_analysis.get_brush_height_inflection(frame_file,
                                             parts,
                                             total_bins,
                                             bin_length,
@@ -178,7 +181,7 @@ for root, dirs, files in os.walk(base_dir):
             brush_top[int(top//bin_length)] += 1
             brush_top[int(system_dimensions[2]//bin_length)] += 1
             z_data = np.column_stack((bin_values, np_profile_current, poly_profile_current, brush_top))
-            with open(dir_base + "/profile_data.dat", 'w') as fp:
+            with open(dir_base + "/z_profile_data.dat", 'w') as fp:
                 np.savetxt(fp, z_data, fmt='%.6e', delimiter=' ', newline='\n', header=str(top), footer='', comments='# ',
                           encoding=None)
 
