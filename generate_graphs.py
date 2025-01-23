@@ -18,6 +18,7 @@ base_dir = "/scratch/chdavis/exp_2_e/NP_BRUSH"
 #base_dir = "/scratch/chdavis/test/NP_BRUSH"
 processed = 0
 total = 0
+#comment that can be undone
 
 dataset = {}
 
