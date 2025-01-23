@@ -67,7 +67,7 @@ for root, dirs, files in os.walk(base_dir):
 
         if str(Umin) not in dataset.keys():
             dataset[str(Umin)] = {}
-        if str(radius) not in dataset[Umin].keys():
+        if str(radius) not in dataset[str(Umin)].keys():
             dataset[str(Umin)][str(radius)] = {}
         if str(sigma) not in dataset[str(Umin)][str(radius)].keys():
             dataset[str(Umin)][str(radius)][str(sigma)] = {}
@@ -76,7 +76,8 @@ for root, dirs, files in os.walk(base_dir):
 
         #reading in the solvent loading
         with open(dir_base + "/post/loading_brush.dat", 'r') as fp:
-            dataset[str(Umin)][str(radius)][str(sigma)][str(num_NPs)]["loading_brush"] = [x for i,x in enumerate(fp.readlines()) if x >0]
+            dataset[str(Umin)][str(radius)][str(sigma)][str(num_NPs)]["loading_brush"] = [x for i,x in enumerate(fp.readlines()) if i > 0]
 
         with open(dir_base + "/post/loading_solv.dat", 'r') as fp:
-            dataset[str(Umin)][str(radius)][str(sigma)][str(num_NPs)]["loading_solv"] = [x for i,x in enumerate(fp.readlines()) if x >0]
+            dataset[str(Umin)][str(radius)][str(sigma)][str(num_NPs)]["loading_solv"] = [x for i,x in enumerate(fp.readlines()) if i > 0]
+pass
