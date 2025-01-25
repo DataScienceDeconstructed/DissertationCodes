@@ -3,7 +3,7 @@
 import os
 import sys
 from ComputationalEquilibriums import ReferenceDistribution
-import numpy as np
+#import numpy as np
 
 from matplotlib import pyplot as plt
 
@@ -47,7 +47,7 @@ def read_dataset():
             # bins for z axis profiling
             bin_length = 0.5  # this bin length is used to cut the system height into intervals for binning
             total_bins = int(1000.0 / bin_length)  # 1000 is used because it is a sim max. i.e. the system can only have a height of 1000
-            bin_values = np.asarray([x*bin_length  for x in range(total_bins)]) # z values for the bins
+            #bin_values = np.asarray([x*bin_length  for x in range(total_bins)]) # z values for the bins
 
             system_dimensions = [0.0, 0.0, 0.0]  # default values that will be overwritten by file data
 
@@ -74,19 +74,39 @@ def read_dataset():
     return dataset
 
 def build_concentration_graphs(_dataset):
-        graphs = 0
         graphs = {}
-        brush_concentration = []
-        solv_concentration = []
+        t = [x for x in range(1002)]
         for u in _dataset.keys():
             graphs[u] = {}
             for r in _dataset[u].keys():
-                graphs[u][r] = {}
-                for s in _dataset[u][r].keys():
-                    for np in _dataset[u][r][s].keys()
-                        brush_concentration.append([u][r][s][np]["loading_brush"])
-    pass
+                graphs[u][r] = {"graph": {"brush":[], "solv":[]}}
+                for si, s in enumerate(_dataset[u][r].keys()):
+                    graphs[u][r]["graph"]["brush"].append([])
+                    graphs[u][r]["graph"]["solv"].append([])
+                    for nps in _dataset[u][r][s].keys():
+                        graphs[u][r]["graph"]["brush"][si].append(_dataset[u][r][s][nps]["loading_brush"])
+                        graphs[u][r]["graph"]["solv"][si].append(_dataset[u][r][s][nps]["loading_solv"])
+
+                        plt.plot(t, _dataset[u][r][s][nps]["loading_brush"],
+                                 label='brush ' + nps, color='blue')
+                        plt.plot(t, _dataset[u][r][s][nps]["loading_solv"],
+                             label='solv ' + nps, color='red')
+
+
+                    # Adding labels and title
+                    plt.xlabel('timestep')
+                    plt.ylabel('Phi')
+                    plt.title('Umin = '+ u +' rad = '+r)
+                    plt.legend()
+                    plt.show()
+                    pass
+
+        # Show the plot
+        plt.show()
+
+        pass
 
 if __name__ == "__main__":
     dataset = read_dataset()
+    build_concentration_graphs(dataset)
     pass
