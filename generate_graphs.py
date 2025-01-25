@@ -73,7 +73,18 @@ def read_dataset():
                 dataset[str(Umin)][str(radius)][str(sigma)][str(num_NPs)]["loading_solv"] = [x for i,x in enumerate(fp.readlines()) if i > 0]
     return dataset
 
-def build_concentration_graphs():
+def build_concentration_graphs(_dataset):
+        graphs = 0
+        graphs = {}
+        brush_concentration = []
+        solv_concentration = []
+        for u in _dataset.keys():
+            graphs[u] = {}
+            for r in _dataset[u].keys():
+                graphs[u][r] = {}
+                for s in _dataset[u][r].keys():
+                    for np in _dataset[u][r][s].keys()
+                        brush_concentration.append([u][r][s][np]["loading_brush"])
     pass
 
 if __name__ == "__main__":
