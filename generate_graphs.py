@@ -7,13 +7,14 @@ from ComputationalEquilibriums import ReferenceDistribution
 
 from matplotlib import pyplot as plt
 
+
 # post process the directories with data
 #base_dir = "/project/chdavis/chdavis/exp_totals/NP_BRUSH/"
 #base_dir = "/scratch/chdavis/exp_2_a/NP_BRUSH"
 #base_dir = "/scratch/chdavis/exp_2_b/NP_BRUSH"
 #base_dir = "/scratch/chdavis/exp_2_c/NP_BRUSH"
-#base_dir = "/scratch/chdavis/exp_2_d/NP_BRUSH"
-base_dir = "/scratch/chdavis/exp_2_e/NP_BRUSH"
+base_dir = "/scratch/chdavis/exp_2_d/NP_BRUSH"
+#base_dir = "/scratch/chdavis/exp_2_e/NP_BRUSH"
 #base_dir = "/scratch/chdavis/exp_2_f/NP_BRUSH"
 #base_dir = "/scratch/chdavis/test/NP_BRUSH"
 #comment that can be undone
@@ -75,7 +76,10 @@ def read_dataset():
 
 def build_concentration_graphs(_dataset):
         graphs = {}
-        t = [x for x in range(1002)]
+        t = [float(x) for x in range(1002)]
+        #fig = plt.figure()
+
+
         for u in _dataset.keys():
             graphs[u] = {}
             for r in _dataset[u].keys():
@@ -83,14 +87,15 @@ def build_concentration_graphs(_dataset):
                 for si, s in enumerate(_dataset[u][r].keys()):
                     graphs[u][r]["graph"]["brush"].append([])
                     graphs[u][r]["graph"]["solv"].append([])
-                    for nps in _dataset[u][r][s].keys():
-                        graphs[u][r]["graph"]["brush"][si].append(_dataset[u][r][s][nps]["loading_brush"])
-                        graphs[u][r]["graph"]["solv"][si].append(_dataset[u][r][s][nps]["loading_solv"])
+                    keys = [str(y) for y in sorted([int(x) for x in _dataset[u][r][s].keys()])]
+                    for nps in keys:#_dataset[u][r][s].keys(): #sorted numerically
+                        graphs[u][r]["graph"]["brush"][si].append([float(x) for x in _dataset[u][r][s][nps]["loading_brush"]])
+                        graphs[u][r]["graph"]["solv"][si].append([float(x) for x in _dataset[u][r][s][nps]["loading_solv"]])
 
-                        plt.plot(t, _dataset[u][r][s][nps]["loading_brush"],
-                                 label='brush ' + nps, color='blue')
-                        plt.plot(t, _dataset[u][r][s][nps]["loading_solv"],
-                             label='solv ' + nps, color='red')
+                        #plt.plot(t, [float(x) for x in _dataset[u][r][s][nps]["loading_brush"]],
+                                 #label='brush ' + nps, color='blue')
+                        plt.plot(t, [float(x) for x in _dataset[u][r][s][nps]["loading_solv"]],
+                             label='solv NP = ' + nps)
 
 
                     # Adding labels and title
