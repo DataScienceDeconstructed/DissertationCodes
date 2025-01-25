@@ -77,7 +77,7 @@ def read_dataset():
 def build_concentration_graphs(_dataset):
         graphs = {}
         t = [float(x) for x in range(1002)]
-        #fig = plt.figure()
+
 
 
         for u in _dataset.keys():
@@ -92,17 +92,21 @@ def build_concentration_graphs(_dataset):
                         graphs[u][r]["graph"]["brush"][si].append([float(x) for x in _dataset[u][r][s][nps]["loading_brush"]])
                         graphs[u][r]["graph"]["solv"][si].append([float(x) for x in _dataset[u][r][s][nps]["loading_solv"]])
 
-                        #plt.plot(t, [float(x) for x in _dataset[u][r][s][nps]["loading_brush"]],
-                                 #label='brush ' + nps, color='blue')
+                        plt.figure(1)
+                        plt.plot(t, [float(x) for x in _dataset[u][r][s][nps]["loading_brush"]],
+                                 label='brush NP = ' + nps)
+                        plt.figure(2)
                         plt.plot(t, [float(x) for x in _dataset[u][r][s][nps]["loading_solv"]],
                              label='solv NP = ' + nps)
 
 
                     # Adding labels and title
-                    plt.xlabel('timestep')
-                    plt.ylabel('Phi')
-                    plt.title('Umin = '+ u +' rad = '+r)
-                    plt.legend()
+                    for i in range(2):
+                        plt.figure(i+1)
+                        plt.xlabel('timestep')
+                        plt.ylabel('Phi')
+                        plt.title('Umin = '+ u +' rad = '+r)
+                        plt.legend()
                     plt.show()
                     pass
 
