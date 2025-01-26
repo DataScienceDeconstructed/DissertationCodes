@@ -90,7 +90,7 @@ def get_brush_height_inflection(filename,
 
         inflection_point = np.zeros(len(z_values))
         #look at the profile above 20 to get rid of any wonkiness in early polymer configurations
-        start = 20.0//bin_length
+        start = int(20.0//bin_length)
         grad_1_min = np.argmin(grad_useful_data_avg[start:]) + start # gets index for minimum after z = 20.
         inflection_point[grad_1_min] += 500
 

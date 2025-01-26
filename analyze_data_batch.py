@@ -15,8 +15,8 @@ from matplotlib import pyplot as plt
 #base_dir = "/scratch/chdavis/exp_2_a/NP_BRUSH"
 #base_dir = "/scratch/chdavis/exp_2_b/NP_BRUSH"
 #base_dir = "/scratch/chdavis/exp_2_c/NP_BRUSH"
-base_dir = "/scratch/chdavis/exp_2_d/NP_BRUSH"
-#base_dir = "/scratch/chdavis/exp_2_e/NP_BRUSH"
+#base_dir = "/scratch/chdavis/exp_2_d/NP_BRUSH"
+base_dir = "/scratch/chdavis/exp_2_e/NP_BRUSH"
 #base_dir = "/scratch/chdavis/exp_2_f/NP_BRUSH"
 
 #base_dir = "/scratch/chdavis"
@@ -144,6 +144,8 @@ for root, dirs, files in os.walk(base_dir):
                                             dir_base=dir_base)
 
             print("top \t", top)
+            if top < 2:
+                print("*******************************************\nBAD TOP calculation in "+root+"******************************************")
 
 
             # calculate volumes for brush and solvent
