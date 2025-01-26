@@ -97,26 +97,29 @@ def get_brush_height_inflection(filename,
         inflection_point = np.zeros(len(z_values))
         grad_1_min = np.argmin(grad_useful_data_avg)
 
-        if((grad_2[grad_1_min - 1] < 0.0 < grad_2[grad_1_min + 1] and
-               grad_2[grad_1_min-2] < 0.0 and
-               grad_2[grad_1_min+2] > 0.0)):
-            inflection_point[grad_1_min] += 500
-            profiles = np.column_stack((z_values,
-                                        useful_data_avg,
-                                        grad_useful_data_avg,
-                                        grad_2,
-                                        inflection_point
-                                        ))
-            if (save_to_dir):
-                with open(dir_base + "/brush_profile.dat", 'w') as fp:
-                    np.savetxt(fp, profiles, fmt='%.6e', delimiter=' ', newline='\n', header='', footer='',
-                               comments='# ',
-                               encoding=None)
+        inflection_point[grad_1_min] += 500
+        profiles = np.column_stack((z_values,
+                                    useful_data_avg,
+                                    grad_useful_data_avg,
+                                    grad_2,
+                                    inflection_point
+                                    ))
+        if (save_to_dir):
+            with open(dir_base + "/brush_profile.dat", 'w') as fp:
+                np.savetxt(fp, profiles, fmt='%.6e', delimiter=' ', newline='\n', header='', footer='',
+                           comments='# ',
+                           encoding=None)
+
+
+        if ((grad_2[grad_1_min - 1] < 0.0 < grad_2[grad_1_min + 1] and
+         grad_2[grad_1_min - 2] < 0.0 and
+         grad_2[grad_1_min + 2] > 0.0)):
+
             rValue = grad_1_min * bin_length
         else:
             print("ASSERTION FAILED")
 
-        return  rValue
+    return  rValue
 def calc_loading(filename,
                  parts,
                  top,
