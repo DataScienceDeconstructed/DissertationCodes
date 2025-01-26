@@ -52,11 +52,10 @@ def get_brush_height_inflection(filename,
                      total_bins,    # total number of bins
                      bin_length,     # length of the bins
                      equil_percent,   # 1 minus what percentage of the simulation time to include in the calculation
-                     brush_top_density,
                      save_to_dir=False,
                      dir_base=""):
     rValue = 0.0
-# process the simulation file
+    # process the simulation file
     poly_profile_lag = []
     poly_profile_current = np.zeros(total_bins, dtype=int)
 
@@ -86,18 +85,16 @@ def get_brush_height_inflection(filename,
         #take 1st and section direivative of profile
         grad_useful_data_avg = np.gradient(useful_data_avg)
         grad_2 = np.gradient(grad_useful_data_avg)
-        zero_crossings = np.where(np.diff(np.signbit(grad_2)))[0]
 
-        # Get the sign of the differences
-        signs = np.sign(grad_useful_data_avg)
-        # Calculate the second differences of the sign array
-        peaks = np.diff(signs)
         z_values = np.asarray([x*bin_length  for x in range(total_bins)])
 
         inflection_point = np.zeros(len(z_values))
-        grad_1_min = np.argmin(grad_useful_data_avg)
-
+        #look at the profile above 20 to get rid of any wonkiness in early polymer configurations
+        start = 20.0//bin_length
+        grad_1_min = np.argmin(grad_useful_data_avg[start:]) + start # gets index for minimum after z = 20.
         inflection_point[grad_1_min] += 500
+
+        #data to save
         profiles = np.column_stack((z_values,
                                     useful_data_avg,
                                     grad_useful_data_avg,
@@ -111,10 +108,12 @@ def get_brush_height_inflection(filename,
                            encoding=None)
 
 
-        if ((grad_2[grad_1_min - 1] < 0.0 < grad_2[grad_1_min + 1] and
+        if (
+         grad_2[grad_1_min - 1] < 0.0 and
+         grad_2[grad_1_min + 1] > 0.0 and
          grad_2[grad_1_min - 2] < 0.0 and
-         grad_2[grad_1_min + 2] > 0.0)):
-
+         grad_2[grad_1_min + 2] > 0.0):
+            #checks to make sure the 2nd derivative is zero
             rValue = grad_1_min * bin_length
         else:
             print("ASSERTION FAILED")
@@ -192,56 +191,3 @@ def retrieve_height(dir_base
     data = [float(x) for x in data if '#' not in x]
     return (float(height[1:]), np.mean(np.array(data[int(len(data)*.2):])))
 
-# def original(filename):
-# # process the simulation file
-#     with open(dir_base + "/frames_" + filename[:-4] + ".xyz", 'r') as fp:
-#         for i, line in enumerate(fp):
-#             split_line = line.strip().split("\t")  # split the file line into its components
-#
-#             # if we have a distributions save it
-#             # there is a line for each particle plus a line for the number of particles and name of experiment.
-#             # that's why we have (parts+2) in each frame. that means each frame can be indexed by i % (parts + 2)
-#             if i % (parts + 2) == 0:
-#                 if i > 0:  # skips the first time since no ditribution to process yet.
-#                     #storing distribution
-#                     info_lag.append(dist.Distribution)
-#                     # already processed one distribution so save it's max height
-#                     brushz_lag.append(dist.ReferenceValue)
-#                     # grab the polymer profile for the time step
-#                     poly_profile_lag.append(poly_profile_current)
-#                     # grab the np profile for the time step
-#                     np_profile_lag.append(np_profile_current)
-#                     # append the avg height list
-#                     poly_avg_height_lag.append(0)
-#                     monocount = 0
-#
-#                     # reset the distributions so that processing can continue.
-#                     dist = ReferenceDistribution(_type="Binary", _reference=0.0, _dist=[0, 0])
-#                     # reset the polymer profile
-#                     poly_profile_current = np.zeros(total_bins)
-#                     # reset the NP profile
-#                     np_profile_current = np.zeros(total_bins)
-#
-#             # grab and record the highest z value for a polymer. This is the brush max height.
-#             if split_line[0] == '1':  # spilt_line[0] will always exist even on break lines with the number of particles and name of exp.
-#                 # line starting with 1 is a monomer on a polymer chain
-#                 # update polymer z profiles
-#                 tempheight = float(split_line[3])
-#
-#                 bin = int(float(split_line[3]) / bin_length)
-#                 poly_profile_current[bin] += 1
-#                 if float(split_line[3]) > dist.ReferenceValue:  # check to see if z value is higher than current max
-#                     # update brush height in distribution class
-#                     dist.update_reference(float(split_line[3]))
-#
-#             # identify the NP inside and outside the brush
-#             if split_line[0] == '2':  # Line starting with a 2 is a np
-#                 # update the z profile for NPs and
-#                 bin = int(float(split_line[3]) / bin_length)
-#                 np_profile_current[bin] += 1
-#                 # pass the z value for the NP to the distribution. It will update according to current z height
-#                 dist.update_distribution(float(split_line[3]))
-#
-#             if split_line[0] == '0':
-#                 poly_avg_height_lag[-1] = tempheight
-#                 tempheight = 0

@@ -140,10 +140,11 @@ for root, dirs, files in os.walk(base_dir):
                                             total_bins,
                                             bin_length,
                                             .2,
-                                            brush_top_density,
-                                                  save_to_dir=True,
-                                                  dir_base=dir_base)
+                                            save_to_dir=True,
+                                            dir_base=dir_base)
+
             print("top \t", top)
+
 
             # calculate volumes for brush and solvent
             Solvent_Volume = system_dimensions[0]*system_dimensions[1]*(system_dimensions[2]-top)
