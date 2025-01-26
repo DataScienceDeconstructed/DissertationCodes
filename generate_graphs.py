@@ -69,9 +69,34 @@ def read_dataset():
 
             #read in the loading data
             with open(dir_base + "/post/loading_brush.dat", 'r') as fp:
-                dataset[str(Umin)][str(radius)][str(sigma)][str(num_NPs)]["loading_brush"] = [x for i,x in enumerate(fp.readlines()) if i > 0]
+                dataset[str(Umin)][str(radius)][str(sigma)][str(num_NPs)]["brush_height"] = float(fp.readline().replace("#", ""))
+                dataset[str(Umin)][str(radius)][str(sigma)][str(num_NPs)]["loading_brush"] = [x for i,x in enumerate(fp.readlines())]
+
             with open(dir_base + "/post/loading_solv.dat", 'r') as fp:
                 dataset[str(Umin)][str(radius)][str(sigma)][str(num_NPs)]["loading_solv"] = [x for i,x in enumerate(fp.readlines()) if i > 0]
+
+            # get information about the simulation
+            filecheck = [s for s in files if ".mpd" in s]
+
+            filename = ""
+            if len(filecheck) == 1:
+                filename = filecheck[0]
+            else:
+                pass  # why is this else clause here?
+
+            system_dimensions = []
+            with open(dir_base + "/" + filename, 'r') as fp:
+
+                split_line = fp.readlines()[9].strip().split()
+
+                system_dimensions = [float(split_line[1]), float(split_line[2]), float(split_line[3])]
+                #for i, line in enumerate(fp):
+                #    if i == 9:  # this is the line with the sim dimensions when MD is used to create the file.
+                #        split_line = line.strip().split(" ")  # split the file line into its components
+                #        system_dimensions = [float(split_line[1]), float(split_line[2]), float(split_line[3])]
+
+            dataset[str(Umin)][str(radius)][str(sigma)][str(num_NPs)]["system_dimensions"] = system_dimensions
+
     return dataset
 
 def build_concentration_graphs(_dataset):
@@ -105,13 +130,13 @@ def build_concentration_graphs(_dataset):
                         plt.figure(i+1)
                         plt.xlabel('timestep')
                         plt.ylabel('Phi')
-                        plt.title('Umin = '+ u +' rad = '+r)
+                        plt.title('Nanoparticle Volume Fraction \n Umin = '+ u +' rad = '+r)
                         plt.legend()
                     plt.show()
                     pass
 
         # Show the plot
-        plt.show()
+        #plt.show()
 
         pass
 
