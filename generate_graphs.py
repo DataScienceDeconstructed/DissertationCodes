@@ -104,31 +104,55 @@ def read_dataset():
 def build_concentration_graphs(_dataset):
         graphs = {}
         t = [float(x) for x in range(1002)]
-
+        title = ['brush','solv']
 
 
         for u in _dataset.keys():
             graphs[u] = {}
             for r in _dataset[u].keys():
-                graphs[u][r] = {"graph": {"brush":[], "solv":[]}}
+                graphs[u][r] = {"graph": {"brush":[], "solv":[], "brush-mean":[], "solv-mean":[], "brush-equil":[], "solv-equil":[], "NP-level":[] }}
                 for si, s in enumerate(_dataset[u][r].keys()):
                     graphs[u][r]["graph"]["brush"].append([])
                     graphs[u][r]["graph"]["solv"].append([])
+                    graphs[u][r]["graph"]["brush-mean"].append([])
+                    graphs[u][r]["graph"]["brush-equil"].append([])
+                    graphs[u][r]["graph"]["solv-mean"].append([])
+                    graphs[u][r]["graph"]["solv-equil"].append([])
+                    graphs[u][r]["graph"]["NP-level"].append([])
+
                     keys = [str(y) for y in sorted([int(x) for x in _dataset[u][r][s].keys()])]
-                    for nps in keys:#_dataset[u][r][s].keys(): #sorted numerically
+                    for nps in keys:#sorted numerically
                         graphs[u][r]["graph"]["brush"][si].append([float(x) for x in _dataset[u][r][s][nps]["loading_brush"]])
                         graphs[u][r]["graph"]["solv"][si].append([float(x) for x in _dataset[u][r][s][nps]["loading_solv"]])
+                        graphs[u][r]["graph"]["brush-mean"].append(
+                            [np.mean(
+                                graphs[u][r]["graph"]["brush"][si][-1])])
+                        graphs[u][r]["graph"]["solv-mean"].append(
+                            [np.mean(
+                                graphs[u][r]["graph"]["solv"][si][-1])])
+                        graphs[u][r]["graph"]["NP-level"].append([nps])
+
 
                         plt.figure(1)
                         brush_data = np.asarray([float(x) for x in _dataset[u][r][s][nps]["loading_brush"]])
+                        brush_equil = verify_equilibrium(brush_data[len(brush_data)//2:], _dataset[u][r][s][nps]["brush_phi_unit"])
+                        graphs[u][r]["graph"]["brush-equil"].append([brush_equil])
+
                         plt.plot(t, brush_data,
-                                 label='brush NP = ' + nps + ' delta ' +
-                                 str(np.std(brush_data[len(brush_data)//2:])/_dataset[u][r][s][nps]["brush_phi_unit"])[0:6])
+                                 label='brush NP = ' + nps + ' Eq = ' +
+                                 str(verify_equilibrium(brush_data[len(brush_data)//2:], _dataset[u][r][s][nps]["brush_phi_unit"]))
+                                 )
+
                         plt.figure(2)
                         solv_data = np.asarray([float(x) for x in _dataset[u][r][s][nps]["loading_solv"]])
+                        solv_equil = verify_equilibrium(solv_data[len(solv_data) // 2:], _dataset[u][r][s][nps]["solv_phi_unit"])
+                        graphs[u][r]["graph"]["solv-equil"].append([solv_equil])
+
                         plt.plot(t, solv_data,
-                             label='solv NP = ' + nps+ ' delta ' +
-                                 str(np.std(solv_data[len(solv_data)//2:])/_dataset[u][r][s][nps]["solv_phi_unit"])[0:6])
+                             label='solv NP = ' + nps+ ' Eq = ' +
+                                   str(verify_equilibrium(solv_data[len(solv_data) // 2:],
+                                                          _dataset[u][r][s][nps]["solv_phi_unit"]))
+                                 )
 
 
                     # Adding labels and title
@@ -137,16 +161,30 @@ def build_concentration_graphs(_dataset):
                         plt.xlabel('timestep')
                         plt.ylabel('Phi')
 
-                        plt.title('Nanoparticle Volume Fraction \n Umin = '+ u +' rad = '+r )
+                        plt.title('Nanoparticle Volume Fraction \n Umin = '+ u +' rad = '+r+' sigma = '+s )
 
                         plt.legend()
-                    plt.show()
+                        plt.savefig(base_dir+ '/umin_'+u+'_radius_'+r+'_sigma_'+s+'_'+title[i]+'.png', bbox_inches='tight')
                     pass
 
         # Show the plot
         #plt.show()
 
         pass
+
+def verify_equilibrium(_data, delta):
+    rValue = False
+    fit_params = np.polyfit(range(len(_data)), _data, 1)
+    std = np.std(_data)
+    #when would value increase by a std?
+    t_future_std = std / np.abs(fit_params[0])
+    t_future_NP = delta / np.abs(fit_params[0]) # when will the fit's value exceed having 1 more NP included or expelled?
+    if t_future_NP > len(_data) * 2:
+        #equilibrium is considered reached if Phi is stable over twice the current timeline.
+        rValue = True
+    else:
+        pass
+    return rValue
 
 if __name__ == "__main__":
     dataset = read_dataset()
