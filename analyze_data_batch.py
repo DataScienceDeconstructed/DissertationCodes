@@ -15,10 +15,11 @@ from matplotlib import pyplot as plt
 #base_dir = "/scratch/chdavis/exp_2_a/NP_BRUSH"
 #base_dir = "/scratch/chdavis/exp_2_b/NP_BRUSH"
 #base_dir = "/scratch/chdavis/exp_2_c/NP_BRUSH"
-base_dir = "/scratch/chdavis/exp_2_d/NP_BRUSH"
+#base_dir = "/scratch/chdavis/exp_2_d/NP_BRUSH"
 #base_dir = "/scratch/chdavis/exp_2_e/NP_BRUSH"
 #base_dir = "/scratch/chdavis/exp_2_f/NP_BRUSH"
 #base_dir = "/scratch/chdavis/test/NP_BRUSH"
+base_dir = "/scratch/chdavis"
 processed = 0
 total = 0
 
@@ -34,6 +35,9 @@ for root, dirs, files in os.walk(base_dir):
     path = root.split(os.sep)
 
     #check to make sure we aren't in a known bad directory
+    if len(root.split("/")) < 4:
+        continue
+
     if ("35" in root.split("/")[-4]) or ("BRUSH" in root.split("/")[-1]):
         #ignore the -.35 Umins because of the PBC issue in the Z direction
         #ignore Brush because of the NP_Brush directory
