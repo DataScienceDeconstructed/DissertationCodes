@@ -3,7 +3,7 @@
 import os
 import sys
 from ComputationalEquilibriums import ReferenceDistribution
-#import numpy as np
+import numpy as np
 
 from matplotlib import pyplot as plt
 
@@ -57,6 +57,7 @@ def read_dataset():
             sigma =  float(dir_base.split("/")[-2].split("_")[-1])
             radius = float(dir_base.split("/")[-3].split("_")[-1])
 
+
             #add and dictionary componenets not already there
             if str(Umin) not in dataset.keys():
                 dataset[str(Umin)] = {}
@@ -86,16 +87,17 @@ def read_dataset():
 
             system_dimensions = []
             with open(dir_base + "/" + filename, 'r') as fp:
-
                 split_line = fp.readlines()[9].strip().split()
-
                 system_dimensions = [float(split_line[1]), float(split_line[2]), float(split_line[3])]
-                #for i, line in enumerate(fp):
-                #    if i == 9:  # this is the line with the sim dimensions when MD is used to create the file.
-                #        split_line = line.strip().split(" ")  # split the file line into its components
-                #        system_dimensions = [float(split_line[1]), float(split_line[2]), float(split_line[3])]
 
             dataset[str(Umin)][str(radius)][str(sigma)][str(num_NPs)]["system_dimensions"] = system_dimensions
+
+            # 1 NP movement changes for phi
+            dataset[str(Umin)][str(radius)][str(sigma)][str(num_NPs)]["brush_phi_unit"] =  4.0 / 3.0 * np.pi * radius * radius * radius / (
+                    system_dimensions[0]*system_dimensions[1]*(dataset[str(Umin)][str(radius)][str(sigma)][str(num_NPs)]["brush_height"] ))
+            dataset[str(Umin)][str(radius)][str(sigma)][str(num_NPs)]["solv_phi_unit"] = 4.0 / 3.0 * np.pi * radius * radius * radius / (
+                system_dimensions[0] * system_dimensions[1] * (system_dimensions[2] -
+                dataset[str(Umin)][str(radius)][str(sigma)][str(num_NPs)]["brush_height"]))
 
     return dataset
 
@@ -118,11 +120,15 @@ def build_concentration_graphs(_dataset):
                         graphs[u][r]["graph"]["solv"][si].append([float(x) for x in _dataset[u][r][s][nps]["loading_solv"]])
 
                         plt.figure(1)
-                        plt.plot(t, [float(x) for x in _dataset[u][r][s][nps]["loading_brush"]],
-                                 label='brush NP = ' + nps)
+                        brush_data = np.asarray([float(x) for x in _dataset[u][r][s][nps]["loading_brush"]])
+                        plt.plot(t, brush_data,
+                                 label='brush NP = ' + nps + ' delta ' +
+                                 str(np.std(brush_data[len(brush_data)//2:])/_dataset[u][r][s][nps]["brush_phi_unit"])[0:6])
                         plt.figure(2)
-                        plt.plot(t, [float(x) for x in _dataset[u][r][s][nps]["loading_solv"]],
-                             label='solv NP = ' + nps)
+                        solv_data = np.asarray([float(x) for x in _dataset[u][r][s][nps]["loading_solv"]])
+                        plt.plot(t, solv_data,
+                             label='solv NP = ' + nps+ ' delta ' +
+                                 str(np.std(solv_data[len(solv_data)//2:])/_dataset[u][r][s][nps]["solv_phi_unit"])[0:6])
 
 
                     # Adding labels and title
@@ -130,7 +136,9 @@ def build_concentration_graphs(_dataset):
                         plt.figure(i+1)
                         plt.xlabel('timestep')
                         plt.ylabel('Phi')
-                        plt.title('Nanoparticle Volume Fraction \n Umin = '+ u +' rad = '+r)
+
+                        plt.title('Nanoparticle Volume Fraction \n Umin = '+ u +' rad = '+r )
+
                         plt.legend()
                     plt.show()
                     pass
