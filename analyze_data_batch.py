@@ -16,10 +16,10 @@ from matplotlib import pyplot as plt
 #base_dir = "/scratch/chdavis/exp_2_b/NP_BRUSH"
 #base_dir = "/scratch/chdavis/exp_2_c/NP_BRUSH"
 #base_dir = "/scratch/chdavis/exp_2_d/NP_BRUSH"
-base_dir = "/scratch/chdavis/exp_2_e/NP_BRUSH"
+#base_dir = "/scratch/chdavis/exp_2_e/NP_BRUSH"
 #base_dir = "/scratch/chdavis/exp_2_f/NP_BRUSH"
 
-#base_dir = "/scratch/chdavis"
+base_dir = "/scratch/chdavis"
 processed = 0
 total = 0
 

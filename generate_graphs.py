@@ -112,6 +112,7 @@ def build_concentration_graphs(_dataset):
             for r in _dataset[u].keys():
                 graphs[u][r] = {"graph": {"brush":[], "solv":[], "brush-mean":[], "solv-mean":[], "brush-equil":[], "solv-equil":[], "NP-level":[] }}
                 for si, s in enumerate(_dataset[u][r].keys()):
+                    #the graph data needs to be updated to handle multiple sigma
                     graphs[u][r]["graph"]["brush"].append([])
                     graphs[u][r]["graph"]["solv"].append([])
                     graphs[u][r]["graph"]["brush-mean"].append([])
@@ -122,6 +123,7 @@ def build_concentration_graphs(_dataset):
 
                     keys = [str(y) for y in sorted([int(x) for x in _dataset[u][r][s].keys()])]
                     for nps in keys:#sorted numerically
+                        # this is indexing on sigmas but should index on nps
                         graphs[u][r]["graph"]["brush"][si].append([float(x) for x in _dataset[u][r][s][nps]["loading_brush"]])
                         graphs[u][r]["graph"]["solv"][si].append([float(x) for x in _dataset[u][r][s][nps]["loading_solv"]])
                         graphs[u][r]["graph"]["brush-mean"].append(
