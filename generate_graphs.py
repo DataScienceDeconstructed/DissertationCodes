@@ -12,16 +12,16 @@ from matplotlib import pyplot as plt
 #base_dir = "/project/chdavis/chdavis/exp_totals/NP_BRUSH/"
 #base_dir = "/scratch/chdavis/exp_2_a/NP_BRUSH"
 #base_dir = "/scratch/chdavis/exp_2_b/NP_BRUSH"
-#base_dir = "/scratch/chdavis/exp_2_c/NP_BRUSH"
-base_dir = "/scratch/chdavis/exp_2_d/NP_BRUSH"
+base_dir = "/scratch/chdavis/exp_2_c/NP_BRUSH"
+#base_dir = "/scratch/chdavis/exp_2_d/NP_BRUSH"
 #base_dir = "/scratch/chdavis/exp_2_e/NP_BRUSH"
 #base_dir = "/scratch/chdavis/exp_2_f/NP_BRUSH"
 #base_dir = "/scratch/chdavis/test/NP_BRUSH"
 #comment that can be undone
 
 dataset = {}
-
-def read_dataset():
+bad_repos = []
+def read_dataset(bad_repos):
 # walk the data path to access the data sets. this is the main part of the code
 # for root, dirs, files in os.walk(base_dir):
     dataset = {}
@@ -73,6 +73,12 @@ def read_dataset():
                 dataset[str(Umin)][str(radius)][str(sigma)][str(num_NPs)]["brush_height"] = float(fp.readline().replace("#", ""))
                 dataset[str(Umin)][str(radius)][str(sigma)][str(num_NPs)]["loading_brush"] = [x for i,x in enumerate(fp.readlines())]
 
+            #if the data was bad
+            if dataset[str(Umin)][str(radius)][str(sigma)][str(num_NPs)]["brush_height"] < 1.0:
+                del dataset[str(Umin)][str(radius)][str(sigma)][str(num_NPs)]
+                bad_repos.append(root)
+                continue
+
             with open(dir_base + "/post/loading_solv.dat", 'r') as fp:
                 dataset[str(Umin)][str(radius)][str(sigma)][str(num_NPs)]["loading_solv"] = [x for i,x in enumerate(fp.readlines()) if i > 0]
 
@@ -99,6 +105,7 @@ def read_dataset():
                 system_dimensions[0] * system_dimensions[1] * (system_dimensions[2] -
                 dataset[str(Umin)][str(radius)][str(sigma)][str(num_NPs)]["brush_height"]))
 
+
     return dataset
 
 def build_concentration_graphs(_dataset):
@@ -110,50 +117,59 @@ def build_concentration_graphs(_dataset):
         for u in _dataset.keys():
             graphs[u] = {}
             for r in _dataset[u].keys():
-                graphs[u][r] = {"graph": {"brush":[], "solv":[], "brush-mean":[], "solv-mean":[], "brush-equil":[], "solv-equil":[], "NP-level":[] }}
+                graphs[u][r] ={}
+
+
+
                 for si, s in enumerate(_dataset[u][r].keys()):
+                    graphs[u][r][s] =  {"graph": {"brush":[], "solv":[], "brush-mean":[], "solv-mean":[], "brush-equil":[], "solv-equil":[], "NP-level":[] }}
                     #the graph data needs to be updated to handle multiple sigma
-                    graphs[u][r]["graph"]["brush"].append([])
-                    graphs[u][r]["graph"]["solv"].append([])
-                    graphs[u][r]["graph"]["brush-mean"].append([])
-                    graphs[u][r]["graph"]["brush-equil"].append([])
-                    graphs[u][r]["graph"]["solv-mean"].append([])
-                    graphs[u][r]["graph"]["solv-equil"].append([])
-                    graphs[u][r]["graph"]["NP-level"].append([])
+                    #graphs[u][r][s]["graph"]["brush"].append([])
+                    #graphs[u][r][s]["graph"]["solv"].append([])
+                    #graphs[u][r][s]["graph"]["brush-mean"].append([])
+                    #graphs[u][r][s]["graph"]["brush-equil"].append([])
+                    #graphs[u][r][s]["graph"]["solv-mean"].append([])
+                    #graphs[u][r][s]["graph"]["solv-equil"].append([])
+                    #graphs[u][r][s]["graph"]["NP-level"].append([])
+                    plt.figure(1)
+                    plt.clf()
+                    plt.figure(2)
+                    plt.clf()
 
                     keys = [str(y) for y in sorted([int(x) for x in _dataset[u][r][s].keys()])]
                     for nps in keys:#sorted numerically
                         # this is indexing on sigmas but should index on nps
-                        graphs[u][r]["graph"]["brush"][si].append([float(x) for x in _dataset[u][r][s][nps]["loading_brush"]])
-                        graphs[u][r]["graph"]["solv"][si].append([float(x) for x in _dataset[u][r][s][nps]["loading_solv"]])
-                        graphs[u][r]["graph"]["brush-mean"].append(
+                        graphs[u][r][s]["graph"]["brush"].append([float(x) for x in _dataset[u][r][s][nps]["loading_brush"]])
+                        graphs[u][r][s]["graph"]["solv"].append([float(x) for x in _dataset[u][r][s][nps]["loading_solv"]])
+                        graphs[u][r][s]["graph"]["brush-mean"].append(
                             [np.mean(
-                                graphs[u][r]["graph"]["brush"][si][-1])])
-                        graphs[u][r]["graph"]["solv-mean"].append(
+                                graphs[u][r][s]["graph"]["brush"][-1])])
+                        graphs[u][r][s]["graph"]["solv-mean"].append(
                             [np.mean(
-                                graphs[u][r]["graph"]["solv"][si][-1])])
-                        graphs[u][r]["graph"]["NP-level"].append([nps])
+                                graphs[u][r][s]["graph"]["solv"][-1])])
+                        graphs[u][r][s]["graph"]["NP-level"].append([nps])
 
 
                         plt.figure(1)
                         brush_data = np.asarray([float(x) for x in _dataset[u][r][s][nps]["loading_brush"]])
                         brush_equil = verify_equilibrium(brush_data[len(brush_data)//2:], _dataset[u][r][s][nps]["brush_phi_unit"])
-                        graphs[u][r]["graph"]["brush-equil"].append([brush_equil])
+                        graphs[u][r][s]["graph"]["brush-equil"].append([brush_equil])
 
-                        plt.plot(t, brush_data,
+                        t = [float(x) for x in range(len(brush_data))]
+                        plt.plot(t[:len(brush_data)], brush_data,
                                  label='brush NP = ' + nps + ' Eq = ' +
-                                 str(verify_equilibrium(brush_data[len(brush_data)//2:], _dataset[u][r][s][nps]["brush_phi_unit"]))
+                                 str(np.mean(brush_data[len(brush_data)//2:]))[0:6]
                                  )
 
                         plt.figure(2)
                         solv_data = np.asarray([float(x) for x in _dataset[u][r][s][nps]["loading_solv"]])
                         solv_equil = verify_equilibrium(solv_data[len(solv_data) // 2:], _dataset[u][r][s][nps]["solv_phi_unit"])
-                        graphs[u][r]["graph"]["solv-equil"].append([solv_equil])
+                        graphs[u][r][s]["graph"]["solv-equil"].append([solv_equil])
 
-                        plt.plot(t, solv_data,
+                        t = [float(x) for x in range(len(solv_data))]
+                        plt.plot(t[:len(solv_data)], solv_data,
                              label='solv NP = ' + nps+ ' Eq = ' +
-                                   str(verify_equilibrium(solv_data[len(solv_data) // 2:],
-                                                          _dataset[u][r][s][nps]["solv_phi_unit"]))
+                                   str(np.mean(solv_data[len(solv_data) // 2:]))[0:6]
                                  )
 
 
@@ -165,7 +181,7 @@ def build_concentration_graphs(_dataset):
 
                         plt.title('Nanoparticle Volume Fraction \n Umin = '+ u +' rad = '+r+' sigma = '+s )
 
-                        plt.legend()
+                        plt.legend(loc='upper left')
                         plt.savefig(base_dir+ '/umin_'+u+'_radius_'+r+'_sigma_'+s+'_'+title[i]+'.png', bbox_inches='tight')
                     pass
 
@@ -179,8 +195,14 @@ def verify_equilibrium(_data, delta):
     fit_params = np.polyfit(range(len(_data)), _data, 1)
     std = np.std(_data)
     #when would value increase by a std?
-    t_future_std = std / np.abs(fit_params[0])
-    t_future_NP = delta / np.abs(fit_params[0]) # when will the fit's value exceed having 1 more NP included or expelled?
+    if fit_params[0] > 10**-15:
+
+        t_future_std = std / np.abs(fit_params[0])
+        t_future_NP = delta / np.abs(fit_params[0]) # when will the fit's value exceed having 1 more NP included or expelled?
+    else:
+        # if the value is really close to zero just assign a large time
+        t_future_NP = 10**9
+
     if t_future_NP > len(_data) * 2:
         #equilibrium is considered reached if Phi is stable over twice the current timeline.
         rValue = True
@@ -189,6 +211,9 @@ def verify_equilibrium(_data, delta):
     return rValue
 
 if __name__ == "__main__":
-    dataset = read_dataset()
+    dataset = read_dataset(bad_repos)
     build_concentration_graphs(dataset)
+    print("******************\nBAD REPOS \n")
+    for repo in bad_repos:
+        print(bad_repos)
     pass
