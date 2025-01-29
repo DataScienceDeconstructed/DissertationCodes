@@ -12,10 +12,10 @@ from matplotlib import pyplot as plt
 #base_dir = "/project/chdavis/chdavis/exp_totals/NP_BRUSH/"
 #base_dir = "/scratch/chdavis/exp_2_a/NP_BRUSH"
 #base_dir = "/scratch/chdavis/exp_2_b/NP_BRUSH"
-base_dir = "/scratch/chdavis/exp_2_c/NP_BRUSH"
+#base_dir = "/scratch/chdavis/exp_2_c/NP_BRUSH"
 #base_dir = "/scratch/chdavis/exp_2_d/NP_BRUSH"
 #base_dir = "/scratch/chdavis/exp_2_e/NP_BRUSH"
-#base_dir = "/scratch/chdavis/exp_2_f/NP_BRUSH"
+base_dir = "/scratch/chdavis/exp_2_f/NP_BRUSH"
 #base_dir = "/scratch/chdavis/test/NP_BRUSH"
 #comment that can be undone
 
@@ -117,6 +117,7 @@ def build_concentration_graphs(_dataset):
         for u in _dataset.keys():
             graphs[u] = {}
             for r in _dataset[u].keys():
+                # build multi sigma graphs at this level
                 graphs[u][r] ={}
 
 
@@ -138,15 +139,17 @@ def build_concentration_graphs(_dataset):
 
                     keys = [str(y) for y in sorted([int(x) for x in _dataset[u][r][s].keys()])]
                     for nps in keys:#sorted numerically
-                        # this is indexing on sigmas but should index on nps
+                        # get brush loading for the run
                         graphs[u][r][s]["graph"]["brush"].append([float(x) for x in _dataset[u][r][s][nps]["loading_brush"]])
                         graphs[u][r][s]["graph"]["solv"].append([float(x) for x in _dataset[u][r][s][nps]["loading_solv"]])
+                        #taking mean for the last half of the runs
                         graphs[u][r][s]["graph"]["brush-mean"].append(
                             [np.mean(
-                                graphs[u][r][s]["graph"]["brush"][-1])])
+                                graphs[u][r][s]["graph"]["brush"][-1][len(graphs[u][r][s]["graph"]["brush"][-1])//2:])])
                         graphs[u][r][s]["graph"]["solv-mean"].append(
                             [np.mean(
-                                graphs[u][r][s]["graph"]["solv"][-1])])
+                                graphs[u][r][s]["graph"]["solv"][-1][len(graphs[u][r][s]["graph"]["solv"][-1])//2:])])
+                        #get the nanoparticles for the run
                         graphs[u][r][s]["graph"]["NP-level"].append([nps])
 
 
@@ -182,11 +185,28 @@ def build_concentration_graphs(_dataset):
                         plt.title('Nanoparticle Volume Fraction \n Umin = '+ u +' rad = '+r+' sigma = '+s )
 
                         plt.legend(loc='upper left')
-                        plt.savefig(base_dir+ '/umin_'+u+'_radius_'+r+'_sigma_'+s+'_'+title[i]+'.png', bbox_inches='tight')
+                        plt.savefig(base_dir+ '/loading_umin_'+u+'_radius_'+r+'_sigma_'+s+'_'+title[i]+'.png', bbox_inches='tight')
                     pass
 
-        # Show the plot
-        #plt.show()
+                plt.figure(3)
+                plt.clf()
+
+
+                num_sigmas = len(graphs[u][r])
+
+                for k in graphs[u][r].keys():
+                    plt.scatter(graphs[u][r][k]['graph']["solv-mean"], graphs[u][r][k]['graph']["brush-mean"],
+                             label='brush phi sigma = ' + k
+                             )
+
+                    pass
+                plt.xlabel('Solvent Phi')
+                plt.ylabel('Brush Phi')
+                plt.title('Solvent Phi versus Brush Phi\n Umin = ' + u + ' rad = ' + r)
+                plt.legend(loc='upper left')
+                plt.savefig(base_dir+ '/concentrations_umin_'+u+'_radius_'+r+'_sigma_'+s+'_'+title[i]+'.png', bbox_inches='tight')
+                #plt.show()
+                pass
 
         pass
 
