@@ -10,13 +10,13 @@ from matplotlib import pyplot as plt
 
 # post process the directories with data
 #base_dir = "/project/chdavis/chdavis/exp_totals/NP_BRUSH/"
-#base_dir = "/scratch/chdavis/exp_2_a/NP_BRUSH"
+base_dir = "/scratch/chdavis/exp_2_a/NP_BRUSH"
 #base_dir = "/scratch/chdavis/exp_2_b/NP_BRUSH"
 #base_dir = "/scratch/chdavis/exp_2_c/NP_BRUSH"
 #base_dir = "/scratch/chdavis/exp_2_d/NP_BRUSH"
 #base_dir = "/scratch/chdavis/exp_2_e/NP_BRUSH"
-base_dir = "/scratch/chdavis/exp_2_f/NP_BRUSH"
-#base_dir = "/scratch/chdavis/test/NP_BRUSH"
+#base_dir = "/scratch/chdavis/exp_2_f/NP_BRUSH"
+#base_dir = "/scratch/chdavis"
 #comment that can be undone
 
 dataset = {}
@@ -29,6 +29,9 @@ def read_dataset(bad_repos):
         print(root, dirs)
         error_list = {"no_files":[], "no_data":[]}
         path = root.split(os.sep)
+        # check to make sure we aren't in a known bad directory
+        if len(root.split("/")) < 4:
+            continue
 
         #check to make sure we aren't in a known bad directory
         if ("35" in root.split("/")[-4]) or ("BRUSH" in root.split("/")[-1]):
