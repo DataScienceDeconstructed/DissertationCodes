@@ -10,11 +10,11 @@ from matplotlib import pyplot as plt
 
 # post process the directories with data
 #base_dir = "/project/chdavis/chdavis/exp_totals/NP_BRUSH/"
-base_dir = "/scratch/chdavis/exp_2_a/NP_BRUSH"
+#base_dir = "/scratch/chdavis/exp_2_a/NP_BRUSH"
 #base_dir = "/scratch/chdavis/exp_2_b/NP_BRUSH"
 #base_dir = "/scratch/chdavis/exp_2_c/NP_BRUSH"
 #base_dir = "/scratch/chdavis/exp_2_d/NP_BRUSH"
-#base_dir = "/scratch/chdavis/exp_2_e/NP_BRUSH"
+base_dir = "/scratch/chdavis/exp_2_e/NP_BRUSH"
 #base_dir = "/scratch/chdavis/exp_2_f/NP_BRUSH"
 #base_dir = "/scratch/chdavis"
 #comment that can be undone
@@ -191,11 +191,14 @@ def build_concentration_graphs(_dataset):
                         plt.savefig(base_dir+ '/loading_umin_'+u+'_radius_'+r+'_sigma_'+s+'_'+title[i]+'.png', bbox_inches='tight')
                     pass
 
+                    #convert_data to xmgrace and save
+                convert_graph_2_xmgrace(graphs, u,r,_dataset)
+
                 plt.figure(3)
                 plt.clf()
 
 
-                num_sigmas = len(graphs[u][r])
+
 
                 for k in graphs[u][r].keys():
                     plt.scatter(graphs[u][r][k]['graph']["solv-mean"], graphs[u][r][k]['graph']["brush-mean"],
@@ -212,6 +215,55 @@ def build_concentration_graphs(_dataset):
                 pass
 
         pass
+
+def convert_graph_2_xmgrace(graphs, u,r, _dataset):
+    num_sigmas = len(graphs[u][r])
+    # save data in xmgrace format
+
+    sigmas = [str(y) for y in sorted([float(x) for x in _dataset[u][r].keys()])]
+    #scroll through the sigma values
+    for s in sigmas:
+        length_brush = 0
+        length_solv = 0
+        length_brush_changed = 0
+        length_solv_changed = 0
+
+        NPs = [str(y) for y in sorted([int(x) for x in _dataset[u][r][s].keys()])]
+        xmgrace_brush_data = []
+        xmgrace_solv_data = []
+        xmgrace_brush_data.append([])
+        xmgrace_solv_data.append([])
+
+        #collect data from each run
+        for _np in NPs:
+            xmgrace_brush_data.append([float(x) for x in _dataset[u][r][s][_np]["loading_brush"]])
+            xmgrace_solv_data.append([float(x) for x in _dataset[u][r][s][_np]["loading_solv"]])
+            #check to see max length (can be different if simulation terminated early)
+            if len(xmgrace_brush_data[-1]) != length_brush:
+                length_brush = len(xmgrace_brush_data[-1])
+                length_brush_changed += 1
+            if len(xmgrace_solv_data[-1]) != length_solv:
+                length_solv = len(xmgrace_solv_data[-1])
+                length_solv_changed += 1
+
+        #confirm the lengths are all the same. both the different np runs and the solv and brush data
+        if ( (length_brush_changed > 1 or length_solv_changed > 1) or
+                (length_brush_changed != length_solv_changed) ):
+            print("WARNING: datasets different lengths. xmgrace graph not being produced")
+            continue
+
+        xmgrace_brush_data[0] = [float(t) for t in range(length_brush)]
+        xmgrace_solv_data[0] = [float(t) for t in range(length_solv)]
+
+        with open(base_dir + "/xmgrace_data_Umin"+u+"_r_"+r+"_" + s + "_brush.dat", 'w') as fp:
+             np.savetxt(fp, np.transpose(xmgrace_brush_data), fmt='%.6e', delimiter=' ', newline='\n', header='', footer='',
+                        comments='# ',
+                        encoding=None)
+        with open(base_dir + "/xmgrace_data_Umin" + u + "_r_" + r + "_" + s + "_solv.dat", 'w') as fp:
+            np.savetxt(fp, np.transpose(xmgrace_solv_data), fmt='%.6e', delimiter=' ', newline='\n', header='', footer='',
+                       comments='# ',
+                       encoding=None)
+
 
 def verify_equilibrium(_data, delta):
     rValue = False
