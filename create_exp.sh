@@ -244,7 +244,7 @@ while IFS=' ' read -r line Uvalue radius aDen nanos; do
         $brush_gen $file_name $RANDOM 800 $aDen 0 100 $length 0.7 3.0
 
         # Read the 10th line of the file (system dimensions)
-        line=$(sed -n '10p' "$file_name")
+        line=$(sed -n '10p' "$file_name.mpd")
         echo $line
 
         # Extract the 4 values from the line (assuming space-separated values)
@@ -256,10 +256,10 @@ while IFS=' ' read -r line Uvalue radius aDen nanos; do
         echo $new_value2
 
         # Replace the 10th line with the modified second value
-        sed -i "10s/$value2/$new_value2/" "$file_name"
+        sed -i "10s/$value2/$new_value2/" "$file_name.mpd"
 
         # Read the 10th line of the file
-        line=$(sed -n '10p' "$file_name")
+        line=$(sed -n '10p' "$file_name.mpd")
         echo $line
 
 
