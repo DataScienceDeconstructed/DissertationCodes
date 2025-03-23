@@ -40,7 +40,7 @@ mapfile -t slack < <(head -n 2 "$slack_file")
 
 #name the experiment
 exp_data='/scratch/chdavis'
-exp_name='exp_3_a'
+exp_name='exp_3_d'
 exp_type='NP_BRUSH'
 exp_dir="$exp_data/$exp_name/$exp_type"
 # Check if the directory exists
@@ -140,7 +140,10 @@ fi
 #spec="$base_dir/brushs_Umin075_r234820025-d03b-4cef-94a9-c3f4503b6d56.sim"
 #spec="$base_dir/brushs_Umin01_exp_r2a8d09447-5994-4f52-b306-1844a1c7045d.sim"
 #spec="$base_dir/brushs_Umin_small_exp_r29377cca7-d76c-450a-b393-802f44986e4e.sim"
-spec="$base_dir/brushs_gaps22227555-4271-46d0-8606-40eaf0b04b04.sim"
+#spec="$base_dir/brushs_gaps22227555-4271-46d0-8606-40eaf0b04b04.sim"
+#spec="$base_dir/brushs_nps_gaps7bf5e980-c057-453b-9275-976c3c6baec6.sim"
+spec="$base_dir/brushs_nps_gaps26da4dce-6077-4221-99b7-cb9d8e6791a9.sim"
+
 # Check if the file exists
 if [ ! -f "$spec" ]; then
     echo "sim spec file not found: $spec"
@@ -155,7 +158,7 @@ module load fftw/3.8.0
 curl -d "text=Clayton Sims starting in $exp_dir " -d "${slack[1]}" -H "${slack[0]}" -X POST https://slack.com/api/chat.postMessage
 
 # Open the file and parse its contents
-while IFS=' ' read -r line Uvalue radius aDen nanos; do
+while IFS=' ' read -r line Uvalue radius aDen nanos gaps lens; do
 
     # Check if the line starts with a hashtag
     if [[ $line == "#"* ]]; then
@@ -167,7 +170,9 @@ while IFS=' ' read -r line Uvalue radius aDen nanos; do
     U_dir="$exp_dir/Umin_$Uvalue"
     rad_dir="$U_dir/rad_$radius"
     den_dir="$rad_dir/den_$aDen"
-    sim_dir="$den_dir/NP_$nanos"
+    gap_dir="$den_dir/gap_$gaps"
+    lens_dir="$gap_dir/len_$lens"
+    sim_dir="$lens_dir/NP_$nanos"
 
     #build a directory to hold the sim and go to that directory
     if [ -d "$sim_dir" ]; then
@@ -236,8 +241,8 @@ while IFS=' ' read -r line Uvalue radius aDen nanos; do
        echo "brush Only sim"
         echo $sim_dir
         # we use the radius variable to pass in the gap size and nanos to pass in the chain length
-        gap="$radius"
-        length="$nanos"
+        gap="$gaps"
+        length="$lens"
         file_name="${exp_name}_Umin${Uvalue}_rad${radius}_den${aDen}_NP${nanos}"
         file_name=${file_name//./\-} # can't use decimels apparently because of mpd code
         echo $file_name
@@ -297,8 +302,65 @@ while IFS=' ' read -r line Uvalue radius aDen nanos; do
 		    # send the simulation off for processing to the cluster
 		    sbatch ./basesim.sh
 
+    elif [ "$line" -eq 3 ]; then
+       #process just brush
+       echo "brush NPs and gaps sim"
+        echo $sim_dir
+        # we use the radius variable to pass in the gap size and nanos to pass in the chain length
+        gap="$gaps"
+        length="$lens"
+        file_name="${exp_name}_Umin${Uvalue}_rad${radius}_den${aDen}_gap${gap}_len${length}_NP${nanos}"
+        file_name=${file_name//./\-} # can't use decimels apparently because of mpd code
+        echo $file_name
+        $gen_dir $file_name $RANDOM 800 $aDen $Uvalue 40 $nanos $radius 0 100 $length 0.7 3.0
+
+        # Read the 10th line of the file (system dimensions)
+        line=$(sed -n '10p' "$file_name.mpd")
+        # Extract the 4 values from the line (assuming space-separated values)
+        read -r value1 value2 value3 value4 <<< "$line"
+        # add the gap to the x direction
+        new_value2=$(echo "$value2 + $gap" | bc)
+        # Replace the 10th line with the modified second value
+        sed -i "10s/$value2/$new_value2/" "$file_name.mpd"
+
+         #these are for warming up
+        $gamma_adjust $file_name 20.0
+        $time_adjust $file_name 0 10
+		    $int_adjust $file_name 10 10
+
+		    #copy the default basesim file into this directory, and update it for this simulation
+		    cp "$base_dir/basesim.sh" ./
+
+        #echo "module load gcc/8.2.0" >> ./basesim.sh
+        # warm up system with high gamma
+        echo "module load fftw/3.3.10/gcc-8.5.0/openmpi-4.1.6" >> ./basesim.sh
+		    echo "$mpd_dir/MD $file_name" >> ./basesim.sh #add processing to submission file
+
+		    #update system parameters and run to completion.
+		    echo "echo 'updating simulation gamma and time files' " >> ./basesim.sh
+		    echo "$gamma_adjust $file_name 1.0" >> ./basesim.sh
+        echo "$time_adjust $file_name 0 100000" >> ./basesim.sh
+		    echo "$int_adjust $file_name 100 100" >> ./basesim.sh
+        echo "$mpd_dir/MD $file_name" >> ./basesim.sh #add processing to submission file
+
+
+		    echo "module load python/3.12.1/gcc.8.5.0" >> ./basesim.sh #add python for analysis to submission file
+		    echo "python3 $base_dir/main.py $sim_dir/ $file_name ">> ./basesim.sh # execute analyis on the file after simulation.
+
+        echo 'slurm_file=$(find . -type f -name "slurm*" -print -quit)'>> ./basesim.sh # execute analyis on the file after simulation.
+        echo 'slurm_lines=$(tail -n 5 $slurm_file)' >> ./basesim.sh
+		    #curl_command="curl -d \"text=Clayton sim finished in $sim_dir \n " ' $slurm_lines ' " \" " "-d \"${slack[1]}\" -H \"${slack[0]}\" -X POST https://slack.com/api/chat.postMessage"
+        #echo "$curl_command"
+        echo -n "curl -d \"text=Clayton sim finished in $sim_dir \n "' $slurm_lines '" \" " "-d \"${slack[1]}\" -H \"${slack[0]}\" -X POST https://slack.com/api/chat.postMessage" >> ./basesim.sh
+
+		    # send the simulation off for processing to the cluster
+		    sbatch ./basesim.sh
+
+
     else
         echo "ignored row"
+
+
     fi
 
     #go back to the base directory
