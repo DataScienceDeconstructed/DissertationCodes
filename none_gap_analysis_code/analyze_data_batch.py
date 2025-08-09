@@ -3,12 +3,9 @@
 # create new file with saturation values
 
 import os
-import sys
 from ComputationalEquilibriums import ReferenceDistribution
 import numpy as np
 import brush_analysis
-
-from matplotlib import pyplot as plt
 
 # post process the directories with data
 #base_dir = "/project/chdavis/chdavis/exp_totals/NP_BRUSH/"
@@ -136,12 +133,12 @@ for root, dirs, files in os.walk(base_dir):
             frame_file = dir_base + "/frames_" + filename[:-4] + ".xyz"
             #get top of brush
             top = brush_analysis.get_brush_height_inflection(frame_file,
-                                            parts,
-                                            total_bins,
-                                            bin_length,
-                                            .2,
-                                            save_to_dir=True,
-                                            dir_base=dir_base)
+                                                             parts,
+                                                             total_bins,
+                                                             bin_length,
+                                                             .2,
+                                                             save_to_dir=True,
+                                                             dir_base=dir_base)
 
             print("top \t", top)
             if top < 2:
@@ -157,12 +154,12 @@ for root, dirs, files in os.walk(base_dir):
             #get NPs in brush
 
             returndict = brush_analysis.calc_loading(frame_file,
-                                                  parts,
-                                                  top,
-                                                  radius,
-                                                  total_bins,
-                                                  bin_length
-                                                  )
+                                                     parts,
+                                                     top,
+                                                     radius,
+                                                     total_bins,
+                                                     bin_length
+                                                     )
             loading_array = np.array(returndict["loading"])
             loading_array[:, 1] = loading_array[:, 1] * NP_Volume / Solvent_Volume
             loading_array[:, 0] = loading_array[:, 0] * NP_Volume / Brush_Volume
