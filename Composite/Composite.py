@@ -56,8 +56,9 @@ class Polymer_Sim():
                 pass
             #normalize
             Rgs[:,:] /= np.float32(monocount)
-
-            plt.plot(Rgs[-1,:])
+            hist = np.histogram(Rgs[50:,:])
+            #plt.plot(Rgs[-1,:])
+            plt.hist(hist)
             plt.show()
             return None
     def parse_simulation_file_stream(self, filepath, expected_groups=800, expected_particles=None, max_frames=None,  frame_break=None):
