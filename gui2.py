@@ -1,283 +1,212 @@
 import sys
+import os
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-
-from PyQt5.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox,
-    QPushButton, QFileDialog, QSlider, QCheckBox
-)
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QPushButton, QVBoxLayout,
+                             QHBoxLayout, QFileDialog, QLabel, QComboBox, QSlider, QCheckBox)
 from PyQt5.QtCore import Qt
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+import matplotlib.pyplot as plt
 
-
-class DensityExplorer(QWidget):
+class DensityExplorer(QMainWindow):
     def __init__(self):
         super().__init__()
-        # Two datasets
+
+        self.setWindowTitle("4D Density Explorer (Two Files)")
+
         self.data1 = None
         self.data2 = None
 
-        # Track UI state for each dataset
-        self.types1 = self.types2 = 0
-        self.selected_type1 = self.selected_type2 = 0
-        self.slice_axis1 = self.slice_axis2 = 'Z'
-        self.slice_index1 = self.slice_index2 = 0
-
-        # Sync flag
-        self.sync_enabled = False
-
-        self.initUI()
-
-    def initUI(self):
-        self.setWindowTitle("Dual 4D Density Explorer")
-
-        layout = QVBoxLayout()
-
-        # ---- File 1 Controls ----
-        top_layout1 = QHBoxLayout()
-        load_button1 = QPushButton("Load 1st .npy File")
-        load_button1.clicked.connect(lambda: self.load_file(1))
-        top_layout1.addWidget(load_button1)
-
-        self.type_selector1 = QComboBox()
-        self.type_selector1.currentIndexChanged.connect(lambda: self.update_plots(1))
-        top_layout1.addWidget(QLabel("Type:"))
-        top_layout1.addWidget(self.type_selector1)
-
-        self.axis_selector1 = QComboBox()
-        self.axis_selector1.addItems(["X", "Y", "Z"])
-        self.axis_selector1.currentIndexChanged.connect(lambda: self.update_slice_axis(1))
-        top_layout1.addWidget(QLabel("Slice Axis:"))
-        top_layout1.addWidget(self.axis_selector1)
-        self.axis_selector1.setCurrentIndex(2)
-
-        self.slice_slider1 = QSlider(Qt.Horizontal)
-        self.slice_slider1.valueChanged.connect(lambda: self.update_slice_plot(1))
-        top_layout1.addWidget(QLabel("Slice Index:"))
-        top_layout1.addWidget(self.slice_slider1)
-
-        # ---- Sync Checkbox ----
-        sync_layout = QHBoxLayout()
-        self.sync_checkbox = QCheckBox("Sync Controls")
-        self.sync_checkbox.stateChanged.connect(self.toggle_sync)
-        sync_layout.addWidget(self.sync_checkbox)
-
-        # ---- File 2 Controls ----
-        top_layout2 = QHBoxLayout()
-        load_button2 = QPushButton("Load 2nd .npy File")
-        load_button2.clicked.connect(lambda: self.load_file(2))
-        top_layout2.addWidget(load_button2)
-
-        self.type_selector2 = QComboBox()
-        self.type_selector2.currentIndexChanged.connect(lambda: self.update_plots(2))
-        top_layout2.addWidget(QLabel("Type:"))
-        top_layout2.addWidget(self.type_selector2)
-
-        self.axis_selector2 = QComboBox()
-        self.axis_selector2.addItems(["X", "Y", "Z"])
-        self.axis_selector2.currentIndexChanged.connect(lambda: self.update_slice_axis(2))
-        top_layout2.addWidget(QLabel("Slice Axis:"))
-        top_layout2.addWidget(self.axis_selector2)
-        self.axis_selector2.setCurrentIndex(2)
-
-        self.slice_slider2 = QSlider(Qt.Horizontal)
-        self.slice_slider2.valueChanged.connect(lambda: self.update_slice_plot(2))
-        top_layout2.addWidget(QLabel("Slice Index:"))
-        top_layout2.addWidget(self.slice_slider2)
-
-        # ---- Matplotlib Figure with 2 rows ----
-        self.fig, axes = plt.subplots(2, 4, figsize=(16, 8))
-        self.axes = axes.flatten()  # Flatten into list of 8
+        self.fig, self.axes = plt.subplots(2, 4, figsize=(16, 8))
         self.canvas = FigureCanvas(self.fig)
 
-        # Layout assembly
-        layout.addLayout(top_layout1)
-        layout.addLayout(sync_layout)
-        layout.addLayout(top_layout2)
+        # File 1 Controls
+        load_btn1 = QPushButton("Load File 1")
+        load_btn1.clicked.connect(lambda: self.load_file(1))
+        self.type_combo1 = QComboBox()
+        self.type_combo1.addItems(["linear", "log"])
+        self.axis_combo1 = QComboBox()
+        self.axis_combo1.addItems(["X", "Y", "Z", "T"])
+        self.slider1 = QSlider(Qt.Horizontal)
+        self.slider1.valueChanged.connect(lambda: self.update_slice(1))
+
+        # File 1 Variable Labels
+        self.file1_labels = {var: QLabel(f"{var} = missing") for var in ["Umin", "rad", "den", "gap", "len", "NP"]}
+
+        # File 2 Controls
+        load_btn2 = QPushButton("Load File 2")
+        load_btn2.clicked.connect(lambda: self.load_file(2))
+        self.type_combo2 = QComboBox()
+        self.type_combo2.addItems(["linear", "log"])
+        self.axis_combo2 = QComboBox()
+        self.axis_combo2.addItems(["X", "Y", "Z", "T"])
+        self.slider2 = QSlider(Qt.Horizontal)
+        self.slider2.valueChanged.connect(lambda: self.update_slice(2))
+
+        # File 2 Variable Labels
+        self.file2_labels = {var: QLabel(f"{var} = missing") for var in ["Umin", "rad", "den", "gap", "len", "NP"]}
+
+        # Sync Checkbox
+        self.sync_checkbox = QCheckBox("Sync Controls")
+        self.sync_checkbox.stateChanged.connect(self.toggle_sync)
+
+        # Layouts
+        layout = QVBoxLayout()
+
+        # File 1 Layout
+        f1_controls = QVBoxLayout()
+        f1_controls.addWidget(load_btn1)
+        f1_controls.addWidget(QLabel("Scale:"))
+        f1_controls.addWidget(self.type_combo1)
+        f1_controls.addWidget(QLabel("Slice Axis:"))
+        f1_controls.addWidget(self.axis_combo1)
+        for lbl in self.file1_labels.values():
+            f1_controls.addWidget(lbl)
+        f1_controls.addWidget(self.slider1)
+
+        # File 2 Layout
+        f2_controls = QVBoxLayout()
+        f2_controls.addWidget(load_btn2)
+        f2_controls.addWidget(QLabel("Scale:"))
+        f2_controls.addWidget(self.type_combo2)
+        f2_controls.addWidget(QLabel("Slice Axis:"))
+        f2_controls.addWidget(self.axis_combo2)
+        for lbl in self.file2_labels.values():
+            f2_controls.addWidget(lbl)
+        f2_controls.addWidget(self.slider2)
+
+        controls_layout = QHBoxLayout()
+        controls_layout.addLayout(f1_controls)
+        controls_layout.addWidget(self.sync_checkbox)
+        controls_layout.addLayout(f2_controls)
+
+        layout.addLayout(controls_layout)
         layout.addWidget(self.canvas)
 
-        self.setLayout(layout)
+        widget = QWidget()
+        widget.setLayout(layout)
+        self.setCentralWidget(widget)
 
-    def toggle_sync(self, state):
-        self.sync_enabled = state == Qt.Checked
+    def parse_variables_from_path(self, filepath):
+        variables = {"Umin": "missing", "rad": "missing", "den": "missing",
+                     "gap": "missing", "len": "missing", "NP": "missing"}
 
-        # Enable/disable File 2 controls
-        self.axis_selector2.setEnabled(not self.sync_enabled)
-        self.slice_slider2.setEnabled(not self.sync_enabled)
+        path_parts = os.path.normpath(filepath).split(os.sep)
+        for part in path_parts:
+            if "_" in part:
+                name, value = part.split("_", 1)
+                if name in variables:
+                    variables[name] = value
+        return variables
 
-        # If enabling sync, immediately sync values
-        if self.sync_enabled:
-            self.axis_selector2.setCurrentIndex(self.axis_selector1.currentIndex())
-            self.slice_slider2.setValue(self.slice_slider1.value())
-            self.update_slice_axis(2)
-            self.update_slice_plot(2)
+    def update_variable_labels(self, variables, label_widgets):
+        for name, label in label_widgets.items():
+            label.setText(f"{name} = {variables[name]}")
 
-    def load_file(self, which):
-        file_path, _ = QFileDialog.getOpenFileName(self, f"Open {which} .npy File", "", "NumPy files (*.npy)")
-        if not file_path:
+    def load_file(self, file_number):
+        filepath, _ = QFileDialog.getOpenFileName(self, "Open File", "", "NumPy/Dat Files (*.npy *.dat)")
+        if not filepath:
             return
 
-        data = np.load(file_path)
-        if data.ndim != 4:
-            print("Invalid data shape. Must be 4D.")
+        try:
+            data = np.load(filepath)
+        except Exception as e:
+            print(f"Error loading file: {e}")
             return
 
-        if which == 1:
+        variables = self.parse_variables_from_path(filepath)
+
+        if file_number == 1:
             self.data1 = data
-            self.types1 = data.shape[3]
-            self.type_selector1.blockSignals(True)
-            self.type_selector1.clear()
-            self.type_selector1.addItems([str(i) for i in range(self.types1)])
-            self.type_selector1.setCurrentIndex(0)
-            self.type_selector1.blockSignals(False)
-            self.selected_type1 = 0
-            self.slice_slider1.setMaximum(data.shape[2] - 1)
-            self.slice_slider1.setValue(0)
+            self.slider1.setMaximum(data.shape[0] - 1)
+            self.update_variable_labels(variables, self.file1_labels)
             self.update_plots(1)
-
         else:
             self.data2 = data
-            self.types2 = data.shape[3]
-            self.type_selector2.blockSignals(True)
-            self.type_selector2.clear()
-            self.type_selector2.addItems([str(i) for i in range(self.types2)])
-            self.type_selector2.setCurrentIndex(0)
-            self.type_selector2.blockSignals(False)
-            self.selected_type2 = 0
-            self.slice_slider2.setMaximum(data.shape[2] - 1)
-            self.slice_slider2.setValue(0)
+            self.slider2.setMaximum(data.shape[0] - 1)
+            self.update_variable_labels(variables, self.file2_labels)
             self.update_plots(2)
 
-    def update_plots(self, which):
-        data = self.data1 if which == 1 else self.data2
-        if data is None:
+    def toggle_sync(self, state):
+        if state == Qt.Checked:
+            # Sync axis and slider values
+            self.axis_combo2.setCurrentIndex(self.axis_combo1.currentIndex())
+            self.slider2.setValue(self.slider1.value())
+
+            # Disable second controls
+            self.axis_combo2.setEnabled(False)
+            self.slider2.setEnabled(False)
+
+            # Connect File 1 controls to update File 2
+            self.axis_combo1.currentIndexChanged.connect(self.sync_axis)
+            self.slider1.valueChanged.connect(self.sync_slider)
+
+        else:
+            # Enable second controls again
+            self.axis_combo2.setEnabled(True)
+            self.slider2.setEnabled(True)
+
+            try:
+                self.axis_combo1.currentIndexChanged.disconnect(self.sync_axis)
+                self.slider1.valueChanged.disconnect(self.sync_slider)
+            except TypeError:
+                pass
+
+    def sync_axis(self):
+        self.axis_combo2.setCurrentIndex(self.axis_combo1.currentIndex())
+        self.update_slice(2)
+
+    def sync_slider(self):
+        self.slider2.setValue(self.slider1.value())
+        self.update_slice(2)
+
+    def update_plots(self, file_number):
+        if file_number == 1 and self.data1 is None:
+            return
+        if file_number == 2 and self.data2 is None:
             return
 
-        num_types = data.shape[3]
-        axis_titles = ['X (ΣY,Z)', 'Y (ΣX,Z)', 'Z (ΣX,Y)']
+        data = self.data1 if file_number == 1 else self.data2
+        row = 0 if file_number == 1 else 1
 
-        row_offset = 0 if which == 1 else 4
-
-        for ax in self.axes[row_offset:row_offset+3]:
+        for ax in self.axes[row]:
             ax.clear()
 
-        colors = cm.get_cmap('tab10', num_types)
-        selected_type = self.selected_type1 if which == 1 else self.selected_type2
+        # Summation plots
+        for i, axis in enumerate(range(3)):
+            summed = np.sum(data, axis=axis)
+            self.axes[row][i].imshow(summed, aspect='auto')
+            self.axes[row][i].set_title(f"Sum over axis {axis}")
 
-        for t in range(num_types):
-            data_t = data[:, :, :, t]
-            x_vals = data_t.sum(axis=(1, 2))
-            y_vals = data_t.sum(axis=(0, 2))
-            z_vals = data_t.sum(axis=(0, 1))
+        # Slice plot
+        self.update_slice(file_number)
 
-            x_vals /= x_vals.max() if x_vals.max() != 0 else 1
-            y_vals /= y_vals.max() if y_vals.max() != 0 else 1
-            z_vals /= z_vals.max() if z_vals.max() != 0 else 1
-
-            summaries = [x_vals, y_vals, z_vals]
-            for i, ax in enumerate(self.axes[row_offset:row_offset+3]):
-                ax.plot(
-                    summaries[i],
-                    label=f"Type {t}",
-                    color=colors(t),
-                    linewidth=2 if t == selected_type else 1,
-                    alpha=1.0 if t == selected_type else 0.5
-                )
-
-        for i, ax in enumerate(self.axes[row_offset:row_offset+3]):
-            ax.set_title(f"Normalized Density along {axis_titles[i]}")
-            ax.set_xlabel("Index")
-            ax.set_ylabel("Normalized Density")
-            ax.set_ylim(0, 1.05)
-            ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=3, fontsize='small', frameon=False)
-
-        self.update_slice_plot(which, draw=False)
-        self.fig.tight_layout()
         self.canvas.draw()
 
-    def update_slice_axis(self, which):
-        data = self.data1 if which == 1 else self.data2
-        if data is None:
+    def update_slice(self, file_number):
+        if file_number == 1 and self.data1 is None:
+            return
+        if file_number == 2 and self.data2 is None:
             return
 
-        axis_selector = self.axis_selector1 if which == 1 else self.axis_selector2
-        slider = self.slice_slider1 if which == 1 else self.slice_slider2
+        data = self.data1 if file_number == 1 else self.data2
+        axis_combo = self.axis_combo1 if file_number == 1 else self.axis_combo2
+        slider = self.slider1 if file_number == 1 else self.slider2
+        row = 0 if file_number == 1 else 1
 
-        axis = axis_selector.currentText()
-        axis_index = {'X': 0, 'Y': 1, 'Z': 2}[axis]
-        max_index = data.shape[axis_index] - 1
-        slider.setMaximum(max_index)
-        slider.setValue(0)
+        axis = axis_combo.currentIndex()
+        idx = slider.value()
 
-        if which == 1:
-            self.slice_axis1 = axis
-            if self.sync_enabled:
-                self.axis_selector2.setCurrentIndex(axis_selector.currentIndex())
-                self.update_slice_axis(2)
-        else:
-            self.slice_axis2 = axis
+        slicer = [slice(None)] * data.ndim
+        slicer[axis] = idx
+        slice_data = data[tuple(slicer)]
 
-        self.update_slice_plot(which)
+        self.axes[row][3].imshow(slice_data, aspect='auto')
+        self.axes[row][3].set_title(f"Slice {axis}={idx}")
 
-    def update_slice_plot(self, which, value=None, draw=True):
-        data = self.data1 if which == 1 else self.data2
-        if data is None:
-            return
+        self.canvas.draw()
 
-        type_selector = self.type_selector1 if which == 1 else self.type_selector2
-        slider = self.slice_slider1 if which == 1 else self.slice_slider2
-        selected_type = int(type_selector.currentText()) if type_selector.currentText().isdigit() else 0
-
-        if which == 1:
-            self.selected_type1 = selected_type
-            slice_axis = self.slice_axis1
-            self.slice_index1 = slider.value()
-            row_offset = 0
-            if self.sync_enabled:
-                self.slice_slider2.setValue(slider.value())
-                self.update_slice_plot(2, draw=False)
-        else:
-            self.selected_type2 = selected_type
-            slice_axis = self.slice_axis2
-            self.slice_index2 = slider.value()
-            row_offset = 4
-
-        data_t = data[:, :, :, selected_type]
-        slice_index = slider.value()
-
-        if slice_axis == 'X':
-            slice_2d = data_t[slice_index, :, :]
-        elif slice_axis == 'Y':
-            slice_2d = data_t[:, slice_index, :]
-        else:
-            slice_2d = data_t[:, :, slice_index]
-
-        axis_idx = {'X': 0, 'Y': 1, 'Z': 2}[slice_axis]
-        for i, ax in enumerate(self.axes[row_offset:row_offset+3]):
-            for line in ax.get_lines():
-                if line.get_label() == 'slice_line':
-                    line.remove()
-            if i == axis_idx:
-                ax.axvline(slice_index, color='orange', linestyle='--', label='slice_line')
-
-        ax = self.axes[row_offset+3]
-        ax.clear()
-        ax.imshow(slice_2d.T, origin='lower', aspect='auto', cmap='viridis')
-        ax.set_title(f"{slice_axis}-slice at {slice_index} (Type {selected_type})")
-        ax.set_xlabel("Axis 1")
-        ax.set_ylabel("Axis 2")
-
-        if draw:
-            self.canvas.draw()
-
-
-def main():
+if __name__ == "__main__":
     app = QApplication(sys.argv)
-    ex = DensityExplorer()
-    ex.show()
+    explorer = DensityExplorer()
+    explorer.show()
     sys.exit(app.exec_())
-
-
-if __name__ == '__main__':
-    main()
