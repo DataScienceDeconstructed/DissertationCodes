@@ -40,7 +40,7 @@ mapfile -t slack < <(head -n 2 "$slack_file")
 
 #name the experiment
 exp_data='/scratch/chdavis'
-exp_name='exp_3_d'
+exp_name='exp_3_f'
 exp_type='NP_BRUSH'
 exp_dir="$exp_data/$exp_name/$exp_type"
 # Check if the directory exists
@@ -142,8 +142,10 @@ fi
 #spec="$base_dir/brushs_Umin_small_exp_r29377cca7-d76c-450a-b393-802f44986e4e.sim"
 #spec="$base_dir/brushs_gaps22227555-4271-46d0-8606-40eaf0b04b04.sim"
 #spec="$base_dir/brushs_nps_gaps7bf5e980-c057-453b-9275-976c3c6baec6.sim"
-spec="$base_dir/brushs_nps_gaps26da4dce-6077-4221-99b7-cb9d8e6791a9.sim"
-
+#spec="$base_dir/brushs_nps_gaps26da4dce-6077-4221-99b7-cb9d8e6791a9.sim"
+#spec="$base_dir/brushs_nps_gaps565a7833-00c0-4bdc-bf74-57257fc09027.sim"
+#spec="$base_dir/brushs_nps_gapse1c2ef3c-206c-476f-8d79-096c122b46c3.sim"
+spec="$base_dir/brushs_nps_gapsd0188434-9fe6-4cd7-a2cc-fb9c11fbf877.sim"
 # Check if the file exists
 if [ ! -f "$spec" ]; then
     echo "sim spec file not found: $spec"
@@ -320,6 +322,9 @@ while IFS=' ' read -r line Uvalue radius aDen nanos gaps lens; do
         read -r value1 value2 value3 value4 <<< "$line"
         # add the gap to the x direction
         new_value2=$(echo "$value2 + $gap" | bc)
+        # add a gap at top the 50 is arbitrary but adds plenty of space before PBC kick in.
+        new_value4=$(echo "$value4 + 50" | bc)
+        echo "$new_value4 z height change from $value4"
         # Replace the 10th line with the modified second value
         sed -i "10s/$value2/$new_value2/" "$file_name.mpd"
 

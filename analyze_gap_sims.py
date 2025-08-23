@@ -3,16 +3,17 @@ import os
 import sys
 from ComputationalEquilibriums import ReferenceDistribution
 import numpy as np
-import brush_analysis
+import gap_brush_analysis
+import subprocess
 
 #from matplotlib import pyplot as plt
 
 # post process the directories with data
-
-base_dir = #base_dir = "/scratch/chdavis/exp_3_c/NP_BRUSH"
+#base_dir = "/scratch/chdavis/exp_3_d/NP_BRUSH/Umin_-0.175/rad_2/den_0.3/gap_128/len_64/NP_4"
+base_dir = "/scratch/chdavis/exp_3_e/NP_BRUSH"
 processed = 0
 total = 0
-
+processing_missing = []
 height_sigma = []
 
 
@@ -61,6 +62,13 @@ for root, dirs, files in os.walk(base_dir):
 
         print("Reading Simulation Global Values")
 
+        #see if data was processed
+        slurm_yes = [s for s in files if "slurm" in s]
+        if len(slurm_yes) == 0:
+            print(root,"\t missing processing")
+            processing_missing.append(root)
+            continue
+
         # get information about the simulation
         filecheck = [s for s in files if ".mpd" in s]
 
@@ -73,20 +81,30 @@ for root, dirs, files in os.walk(base_dir):
         if filename is None:
             print(root + "\t" + filename + ".mpd doesn't exist")
             continue
-
+        particles = 0
         with open(dir_base +"/"+ filename, 'r') as fp:
             for i, line in enumerate(fp):
+                if i == 6:
+                    split_line = line.strip().split(" ")  # split the file line into its components
+                    particles = int(split_line[1])
                 if i == 9:  # this is the line with the sim dimensions when MD is used to create the file.
                     split_line = line.strip().split(" ")  # split the file line into its components
                     system_dimensions = [float(split_line[1]), float(split_line[2]), float(split_line[3])]
 
-        # grab the number of particles and the name of the experiment from the save file
-        parts = None
-        name = None
+        warmup = .8
+        frame_file = dir_base + "/frames_" + filename[:-4] + ".xyz"
 
-        # calculate the density for the top of the brush. If the density is less than this on average
-        # we are at the top of the brush
-        brush_top_density = 1.0 / system_dimensions[0] / system_dimensions[1] /bin_length
+        #get last frame from frame file and save it
+        frame_lines = 0
+        with open(frame_file, 'r') as fp:
+            frame_lines = int(fp.readline()) +2
+
+        with open(dir_base + "/last_frame.xyz", 'w') as outfile:
+            subprocess.run(['tail', f'-n{frame_lines}', frame_file], stdout=outfile, check=True)
+
+        voxel_array, error = gap_brush_analysis.build_density_voxels(frame_file, particles, warmup, system_dimensions, save_to_dir=True, dir_base=dir_base)
+        print(error)
 
 
-        primary_process = True # primary process holds standard processing. the else clause is for experiments
+print("done \t processing missing for ", len(processing_missing)," sims")
+print(processing_missing)
