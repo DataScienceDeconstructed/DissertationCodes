@@ -56,9 +56,12 @@ class Polymer_Sim():
                 pass
             #normalize
             Rgs[:,:] /= np.float32(monocount)
-            hist = np.histogram(Rgs[50:,:])
+            rgs_avg = np.mean(Rgs[-200:,:], axis=0)
+            hist = np.histogram(rgs_avg )
+            print(hist)
+
             #plt.plot(Rgs[-1,:])
-            plt.hist(hist)
+            plt.hist(hist[0], bins=hist[1])
             plt.show()
             return None
     def parse_simulation_file_stream(self, filepath, expected_groups=800, expected_particles=None, max_frames=None,  frame_break=None):
@@ -188,7 +191,7 @@ class Polymer_Sim():
 if __name__ == "__main__":
     filename = "/home/clayton/Disertation/gap_sims/frames_exp_3_f_Umin-0-175_rad2_den0-3_gap0_len128_NP0.xyz"
     Simulation = Polymer_Sim()
-    Simulation.parse_simulation_file_stream(filename, frame_break=100)
+    Simulation.parse_simulation_file_stream(filename, frame_break=1000)
     Simulation.calc_heights()
     Simulation.prepframe()
     Simulation.calc_Rglat()
