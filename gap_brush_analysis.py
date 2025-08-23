@@ -18,7 +18,7 @@ def build_density_voxels(filename,
 
     voxel_array = np.zeros(voxel_array_dims)
 
-
+    #warmup is effectively the number of frames to skip in the simulation waiting for equilibrium
     warmup = int((100000/100*(parts+2)) * equil_percent)
     print("Warmup \t", warmup)
     postwarmup = 0
@@ -34,7 +34,7 @@ def build_density_voxels(filename,
             # there is a line for each particle plus a line for the number of particles and name of experiment.
             # that's why we have (parts+2) in each frame. that means each frame can be indexed by i % (parts + 2)
             if i % (parts + 2) == 0:
-                postwarmup += 1
+                postwarmup += 1 # counts number of postwarmup frames
                 if i == 0: # first line is header info
                     continue
 
@@ -51,7 +51,7 @@ def build_density_voxels(filename,
 
         if (save_to_dir):
             with open(dir_base + "/voxel_data.dat", 'wb') as fp:
-                np.save(fp, 1.0 / np.float32(postwarmup) * voxel_array)
+                np.save(fp, 1.0 / np.float32(postwarmup) * voxel_array) # division gives the postwarmup per frame average
 
         if postwarmup >= (100000/100 - warmup):
             error = False

@@ -10,7 +10,7 @@ import subprocess
 
 # post process the directories with data
 #base_dir = "/scratch/chdavis/exp_3_d/NP_BRUSH/Umin_-0.175/rad_2/den_0.3/gap_128/len_64/NP_4"
-base_dir = "/scratch/chdavis/exp_3_e/NP_BRUSH"
+base_dir = "/scratch/chdavis/exp_3_f/NP_BRUSH"
 processed = 0
 total = 0
 processing_missing = []
@@ -26,6 +26,7 @@ for root, dirs, files in os.walk(base_dir):
     path = root.split(os.sep)
 
     #check to make sure we aren't in a known bad directory
+    # this is used because by default data is in a directory that is at least 4 directies deep
     if len(root.split("/")) < 4:
         continue
 
@@ -46,7 +47,7 @@ for root, dirs, files in os.walk(base_dir):
         system_dimensions = [0.0, 0.0, 0.0]  # default values that will be overwritten by file data
 
         # retrieve values from path. relies on naming conventions from create_exp.sh
-        # Umin_-0.175/rad_2/den_0.03/den_64/den_32/NP_1024/
+        # Umin_-0.175/rad_2/den_0.03/gap_64/len_32/NP_1024/
 
         poly_len = float(dir_base.split("/")[-2].split("_")[-1])
         gap_len = float(dir_base.split("/")[-3].split("_")[-1])
