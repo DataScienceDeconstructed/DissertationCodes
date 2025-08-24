@@ -1,244 +1,193 @@
+import sys
 import os
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib import cm
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QPushButton, QFileDialog, QLabel, QSlider, QCheckBox, QMessageBox
+    QPushButton, QLabel, QFileDialog, QComboBox, QSlider, QCheckBox,
+    QMessageBox, QSizePolicy
 )
 from PyQt5.QtCore import Qt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
 
-# Axis mapping
-AXIS_MAP = {'X': 0, 'Y': 1, 'Z': 2}
-
-
-class DensityExplorer(QMainWindow):
-    def __init__(self):
+class SliceViewer(QWidget):
+    def __init__(self, title):
         super().__init__()
-        self.setWindowTitle("4D Density Explorer — Two Files + Difference")
-        self.resize(1600, 1050)
+        self.title = title
+        self.data = None
+        self.sync_checkbox = None
+        self.linked_viewer = None
 
-        # Data storage
-        self.data = {1: None, 2: None, 'diff': None}
-        self.paths = {1: None, 2: None}
+        # Layouts
+        self.layout = QVBoxLayout(self)
+        self.label = QLabel(title)
+        self.layout.addWidget(self.label)
 
-        # Per-dataset UI state
-        self.selected_type = {1: 0, 2: 0, 'diff': 0}
-        self.slice_axis = {1: 'Z', 2: 'Z', 'diff': 'Z'}
-        self.slice_index = {1: 0, 2: 0, 'diff': 0}
-        self.sync_to_file1 = {2: False, 'diff': False}
+        control_layout = QHBoxLayout()
 
-        # Store active colorbars so we can clear them
-        self.colorbars = {1: None, 2: None, 'diff': None}
+        # File load button
+        self.load_button = QPushButton("Load File")
+        self.load_button.clicked.connect(self.load_file)
+        control_layout.addWidget(self.load_button)
 
-        self._build_ui()
+        # Variable labels
+        self.var_labels = {}
+        for var in ["Umin", "rad", "den", "gap", "len", "NP"]:
+            lbl = QLabel(f"{var}: missing")
+            self.var_labels[var] = lbl
+            control_layout.addWidget(lbl)
 
-    # ---------------- UI ----------------
-    def _build_ui(self):
-        root = QWidget()
-        self.setCentralWidget(root)
-        layout = QVBoxLayout(root)
+        # Axis selector
+        self.axis_selector = QComboBox()
+        self.axis_selector.addItems(["X", "Y", "Z"])
+        self.axis_selector.currentIndexChanged.connect(self.update_view)
+        control_layout.addWidget(self.axis_selector)
 
-        # Controls row
-        ctrl_row = QHBoxLayout()
-        layout.addLayout(ctrl_row)
+        # Sync checkbox (added later externally)
 
-        # File loaders
-        self.labels = {}
-        self.sliders = {}
-        self.sync_checks = {}
+        self.layout.addLayout(control_layout)
 
-        for key in [1, 2]:
-            box = QVBoxLayout()
-            ctrl_row.addLayout(box)
-            btn = QPushButton(f"Load File {key}")
-            btn.clicked.connect(lambda _, k=key: self.load_file(k))
-            box.addWidget(btn)
-            self.labels[key] = QLabel("No file loaded")
-            box.addWidget(self.labels[key])
-            # Slice slider
-            slider = QSlider(Qt.Horizontal)
-            slider.setMinimum(0)
-            slider.valueChanged.connect(lambda v, k=key: self.on_slider_changed(k, v))
-            box.addWidget(slider)
-            self.sliders[key] = slider
-            if key == 2:
-                sync = QCheckBox("Sync to File 1")
-                sync.stateChanged.connect(lambda state, k=2: self.set_sync(k, state))
-                box.addWidget(sync)
-                self.sync_checks[key] = sync
+        # Plot area
+        plot_layout = QHBoxLayout()
 
-        # Diff file controls
-        box = QVBoxLayout()
-        ctrl_row.addLayout(box)
-        self.labels['diff'] = QLabel("Difference dataset")
-        box.addWidget(self.labels['diff'])
-        slider = QSlider(Qt.Horizontal)
-        slider.setMinimum(0)
-        slider.valueChanged.connect(lambda v, k='diff': self.on_slider_changed(k, v))
-        box.addWidget(slider)
-        self.sliders['diff'] = slider
-        sync = QCheckBox("Sync to File 1")
-        sync.stateChanged.connect(lambda state, k='diff': self.set_sync(k, state))
-        box.addWidget(sync)
-        self.sync_checks['diff'] = sync
-
-        # Plot canvas
-        self.fig, self.axarr = plt.subplots(3, 4, figsize=(14, 9))
-        self.fig.subplots_adjust(hspace=0.6, wspace=0.4)
+        self.fig = Figure(figsize=(6, 4))
         self.canvas = FigureCanvas(self.fig)
-        layout.addWidget(self.canvas)
+        self.ax_sum = self.fig.add_subplot(1, 2, 1)
+        self.ax_slice = self.fig.add_subplot(1, 2, 2)
+        self.fig.tight_layout()
+        plot_layout.addWidget(self.canvas)
 
-        # Map: dataset -> row of axes
-        self.axes = {1: self.axarr[0], 2: self.axarr[1], 'diff': self.axarr[2]}
+        # Slider at far right (stretch)
+        self.slider = QSlider(Qt.Horizontal)
+        self.slider.valueChanged.connect(self.update_view)
+        self.slider.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        plot_layout.addWidget(self.slider)
 
-    # ---------------- File handling ----------------
-    def load_file(self, key):
-        path, _ = QFileDialog.getOpenFileName(
-            self, f"Open File {key}", "",
-            "Data Files (*.npy *.dat);;All Files (*)"
+        self.layout.addLayout(plot_layout)
+
+        # Orange bar lines for sum plots
+        self.slice_line = None
+
+    def load_file(self):
+        options = QFileDialog.Options()
+        file_name, _ = QFileDialog.getOpenFileName(
+            self, "Open NumPy File", "", "NumPy files (*.npy *.dat)", options=options
         )
-        if not path:
-            return
-        try:
-            arr = np.load(path, allow_pickle=False)
-        except Exception:
+        if file_name:
             try:
-                arr = np.loadtxt(path)
+                self.data = np.load(file_name)
+                if self.data.ndim != 4:
+                    raise ValueError("Data must be 4D (X, Y, Z, T)")
+
+                # Parse directory variables
+                path_parts = file_name.split(os.sep)
+                for var in self.var_labels:
+                    found = "missing"
+                    for part in path_parts:
+                        if part.startswith(var + "_"):
+                            found = part.split("_", 1)[1]
+                    self.var_labels[var].setText(f"{var}: {found}")
+
+                self.slider.setMaximum(self.data.shape[0] - 1)
+                self.slider.setValue(self.data.shape[0] // 2)
+                self.update_view()
+
+                if self.linked_viewer:
+                    self.linked_viewer.try_make_diff()
+
             except Exception as e:
-                QMessageBox.critical(self, "Load Error", f"Could not load file:\n{e}")
-                return
-        if arr.ndim != 4:
-            QMessageBox.critical(self, "Shape Error", f"File {os.path.basename(path)} does not have 4D shape.")
+                QMessageBox.critical(self, "Error", f"Failed to load file: {e}")
+
+    def update_view(self):
+        if self.data is None:
             return
-        self.data[key] = arr
-        self.paths[key] = path
-        self.labels[key].setText(os.path.basename(path))
-        self.sliders[key].setMaximum(arr.shape[2] - 1)
-        self.sliders[key].setValue(arr.shape[2] // 2)
 
-        # If both loaded, compute difference
-        if self.data[1] is not None and self.data[2] is not None:
-            if self.data[1].shape == self.data[2].shape:
-                self.data['diff'] = self.data[1] - self.data[2]
-                self.sliders['diff'].setMaximum(self.data['diff'].shape[2] - 1)
-                self.sliders['diff'].setValue(self.data['diff'].shape[2] // 2)
-            else:
-                QMessageBox.warning(self, "Shape Mismatch", "Files cannot be subtracted: different shapes.")
-                self.data['diff'] = None
+        axis = self.axis_selector.currentIndex()
+        idx = self.slider.value()
 
-        self.update_view(key)
-        if key in [1, 2] and self.data['diff'] is not None:
-            self.update_view('diff')
+        # Clear axes
+        self.ax_sum.clear()
+        self.ax_slice.clear()
 
-    # ---------------- Events ----------------
-    def set_sync(self, key, state):
-        self.sync_to_file1[key] = (state == Qt.Checked)
+        # Summations for all T
+        labels = ["X", "Y", "Z"]
+        for t in range(self.data.shape[3]):
+            s = self.data.sum(axis=axis)[:, :, t] if axis < 2 else self.data.sum(axis=axis)[:, t]
+            if s.ndim > 1:
+                s = s.sum(axis=0)
+            s_norm = s / np.max(s) if np.max(s) > 0 else s
+            self.ax_sum.plot(np.arange(len(s)), s_norm, label=f"T{t}")
 
-    def on_slider_changed(self, key, value):
-        self.slice_index[key] = value
-        if key == 1:
-            for k in [2, 'diff']:
-                if self.sync_to_file1[k]:
-                    self.sliders[k].blockSignals(True)
-                    self.sliders[k].setValue(value)
-                    self.sliders[k].blockSignals(False)
-                    self.slice_index[k] = value
-                    self.update_view(k)
-        self.update_view(key)
+        self.ax_sum.legend()
+        self.ax_sum.set_title("Summation")
 
-    # ---------------- Updates ----------------
-    def update_view(self, key):
-        if self.data[key] is None:
-            return
-        self._update_summaries(key)
-        self._update_slice_plot(key)
+        # Slice view for current type (T=0)
+        slicer = [slice(None)] * 4
+        slicer[axis] = idx
+        slice2d = self.data[tuple(slicer)]
+
+        im = self.ax_slice.imshow(slice2d, cmap="viridis", origin="lower")
+        self.ax_slice.set_title(f"Slice {labels[axis]}={idx}")
+        self.fig.colorbar(im, ax=self.ax_slice)
+
+        # Orange bar showing current index
+        if self.slice_line:
+            self.slice_line.remove()
+        self.slice_line = self.ax_sum.axvline(idx, color="orange", linestyle="--")
+
         self.canvas.draw_idle()
 
-    def _update_summaries(self, key):
-        data = self.data[key]
-        axes_row = self.axes[key]
-        for i in range(3):
-            axes_row[i].clear()
+        # Sync if checkbox is checked
+        if self.sync_checkbox and self.sync_checkbox.isChecked():
+            if self.linked_viewer and self.linked_viewer.data is not None:
+                self.linked_viewer.axis_selector.setCurrentIndex(axis)
+                max_val = self.linked_viewer.slider.maximum()
+                self.linked_viewer.slider.setValue(min(idx, max_val))
 
-        num_types = data.shape[3]
-        colors = cm.get_cmap('tab20', max(10, num_types))
-
-        sel_t = self.selected_type[key]
-        for t in range(num_types):
-            vol = data[:, :, :, t]
-            x_vals = vol.sum(axis=(1, 2))
-            y_vals = vol.sum(axis=(0, 2))
-            z_vals = vol.sum(axis=(0, 1))
-
-            def norm(v):
-                vmax = float(np.max(np.abs(v))) if v.size else 0.0
-                return (v / vmax) if vmax > 0 else v
-
-            series = [norm(x_vals), norm(y_vals), norm(z_vals)]
-            for i in range(3):
-                axes_row[i].plot(
-                    series[i], label=f"Type {t}", color=colors(t),
-                    linewidth=2 if t == sel_t else 1, alpha=1.0 if t == sel_t else 0.6
-                )
-
-        titles = ["X (ΣY,Z)", "Y (ΣX,Z)", "Z (ΣX,Y)"]
-        for i in range(3):
-            axes_row[i].set_title(titles[i])
-            axes_row[i].set_xlabel("Index")
-            axes_row[i].set_ylabel("Normalized Density")
-            axes_row[i].set_ylim(-1.05, 1.05)
-            axes_row[i].axhline(0, color='black', linestyle=':')
-
-        axis_idx = AXIS_MAP[self.slice_axis[key]]
-        axes_row[axis_idx].axvline(self.slice_index[key], color='orange', linestyle='--')
-
-        for i in range(3):
-            axes_row[i].legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),
-                               ncol=min(4, max(1, num_types)), fontsize='small', frameon=False)
-
-    def _update_slice_plot(self, key):
-        data = self.data[key]
-        ax = self.axes[key][3]
-        ax.clear()
-
-        # Remove old colorbar if present
-        if self.colorbars[key] is not None:
-            self.colorbars[key].remove()
-            self.colorbars[key] = None
-
-        t = int(np.clip(self.selected_type[key], 0, data.shape[3]-1))
-        vol = data[:, :, :, t]
-        axis_txt = self.slice_axis[key]
-        idx = int(np.clip(self.slice_index[key], 0, vol.shape[AXIS_MAP[axis_txt]]-1))
-
-        if axis_txt == 'X':
-            slice_2d = vol[idx, :, :]
-            xlab, ylab = 'Y', 'Z'
-        elif axis_txt == 'Y':
-            slice_2d = vol[:, idx, :]
-            xlab, ylab = 'X', 'Z'
-        else:
-            slice_2d = vol[:, :, idx]
-            xlab, ylab = 'X', 'Y'
-
-        slice_2d = np.squeeze(slice_2d)
-        if slice_2d.ndim != 2:
-            QMessageBox.warning(self, "Slice Error", f"Unexpected slice shape {slice_2d.shape} for imshow.")
+    def try_make_diff(self):
+        if self.linked_viewer is None:
             return
+        f1, f2, fdiff = self, self.linked_viewer, self.linked_viewer.diff_viewer
+        if f1.data is not None and f2.data is not None:
+            if f1.data.shape == f2.data.shape:
+                fdiff.data = f2.data - f1.data
+                fdiff.slider.setMaximum(fdiff.data.shape[0] - 1)
+                fdiff.slider.setValue(fdiff.data.shape[0] // 2)
+                fdiff.update_view()
+            else:
+                QMessageBox.critical(self, "Error", "Arrays have different shapes, cannot subtract.")
 
-        im = ax.imshow(slice_2d.T, origin='lower', aspect='auto', cmap='viridis')
-        ax.set_title(f"{axis_txt}-slice at {idx} (Type {t})")
-        ax.set_xlabel(xlab)
-        ax.set_ylabel(ylab)
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("3D Data Viewer with Difference")
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+        layout = QVBoxLayout(central_widget)
 
-        # Add colorbar next to slice
-        self.colorbars[key] = ax.figure.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+        # File1 viewer
+        self.viewer1 = SliceViewer("File 1")
+        layout.addWidget(self.viewer1)
 
+        # File2 viewer
+        self.viewer2 = SliceViewer("File 2")
+        self.viewer2.sync_checkbox = QCheckBox("Sync with File 1")
+        self.viewer2.layout.addWidget(self.viewer2.sync_checkbox)
+        layout.addWidget(self.viewer2)
+
+        # Diff viewer
+        self.diff_viewer = SliceViewer("Difference (File2 - File1)")
+        self.diff_viewer.sync_checkbox = QCheckBox("Sync with File 1")
+        self.diff_viewer.layout.addWidget(self.diff_viewer.sync_checkbox)
+        layout.addWidget(self.diff_viewer)
+
+        # Cross-links
+        self.viewer1.linked_viewer = self.viewer2
+        self.viewer2.linked_viewer = self.viewer1
+        self.viewer2.diff_viewer = self.diff_viewer
 
 if __name__ == "__main__":
-    app = QApplication([])
-    win = DensityExplorer()
-    win.show()
-    app.exec_()
+    app = QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
+    sys.exit(app.exec_())
