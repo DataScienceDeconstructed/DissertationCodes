@@ -391,7 +391,7 @@ class DensityExplorer(QMainWindow):
             z_vals = vol.sum(axis=(0, 1))
 
             def norm(v):
-                vmax = float(np.max(v)) if v.size else 0.0
+                vmax = float(np.max(np.abs(v))) if v.size else 0.0
                 return (v / vmax) if vmax > 0 else v
 
             series = [norm(x_vals), norm(y_vals), norm(z_vals)]
@@ -406,7 +406,7 @@ class DensityExplorer(QMainWindow):
             axes_row[i].set_title(titles[i])
             axes_row[i].set_xlabel("Index")
             axes_row[i].set_ylabel("Normalized Density")
-            axes_row[i].set_ylim(0, 1.05)
+            axes_row[i].set_ylim(-1.05, 1.05)
 
         # Orange slice line on the selected axis plot
         axis_idx = AXIS_MAP[self.slice_axis[key]]
