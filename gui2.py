@@ -34,8 +34,9 @@ class DataSetPanel(QWidget):
         self.cbar = None
 
         layout = QVBoxLayout()
-        hlayout = QHBoxLayout()
 
+        # --- Top row controls ---
+        hlayout = QHBoxLayout()
         self.load_btn = QPushButton(f"Load {title}")
         self.var_labels = {v: QLabel(f"{v}: missing") for v in
                            ["Umin", "rad", "den", "gap", "len", "NP"]}
@@ -57,8 +58,8 @@ class DataSetPanel(QWidget):
 
         layout.addLayout(hlayout)
 
-        # Matplotlib figure for summation + slice
-        self.fig = Figure(figsize=(5, 3))
+        # --- Plot area ---
+        self.fig = Figure(figsize=(6, 4))
         self.canvas = FigureCanvas(self.fig)
         layout.addWidget(self.canvas)
 
@@ -79,6 +80,7 @@ class DataSetPanel(QWidget):
             for k, lbl in self.var_labels.items():
                 lbl.setText(f"{k}: {parsed[k]}")
             # reset slider
+            self.slice_axis = self.axis_box.currentIndex()
             self.slider.setMinimum(0)
             self.slider.setMaximum(self.data.shape[self.slice_axis] - 1)
             self.slider.setValue(self.data.shape[self.slice_axis] // 2)
@@ -101,7 +103,9 @@ class DataSetPanel(QWidget):
         slice2d = self.get_slice()
         if slice2d is None:
             return
-        self.fig.clear()
+
+        # Clear only axes, not whole figure (so colorbar axes persist)
+        self.fig.clf()
 
         # --- Summation plot ---
         ax_sum = self.fig.add_subplot(1, 2, 1)
@@ -120,7 +124,7 @@ class DataSetPanel(QWidget):
             self.im = ax_slice.imshow(slice2d, cmap="viridis", origin="lower")
             self.cbar = self.fig.colorbar(self.im, ax=ax_slice)
         else:
-            self.im.set_data(slice2d)
+            self.im = ax_slice.imshow(slice2d, cmap="viridis", origin="lower")
             self.im.set_clim(vmin=slice2d.min(), vmax=slice2d.max())
             if self.cbar:
                 self.cbar.update_normal(self.im)
