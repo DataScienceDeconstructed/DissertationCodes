@@ -364,4 +364,191 @@ class DensityExplorer(QMainWindow):
                 self._apply_sync_to_dataset(2)
                 self._update_all_plots(2)
             if self.sync_to_file1['diff'] and self.data['diff'] is not None:
-                self._apply_sync_to_dataset('di
+                self._apply_sync_to_dataset('diff')
+                self._update_all_plots('diff')
+
+    def _toggle_sync(self, key, state):
+        self.sync_to_file1[key] = (state == Qt.Checked)
+        ctrl = self._ctrl_for(key)
+        ctrl['axis_combo'].setEnabled(not self.sync_to_file1[key])
+        ctrl['slider'].setEnabled(not self.sync_to_file1[key])
+        if self.sync_to_file1[key] and self.data[1] is not None:
+            self._apply_sync_to_dataset(key)
+            self._update_all_plots(key)
+
+    # ------------------------- Helpers -------------------------
+    def _ctrl_for(self, key):
+        return self.ctrl1 if key == 1 else (self.ctrl2 if key == 2 else self.ctrlD)
+
+    def _reset_slider_bounds(self, key):
+        data = self.data.get(key)
+        if data is None:
+            return
+        axis = AXIS_MAP[self.slice_axis[key]]
+        max_index = max(0, data.shape[axis] - 1)
+        ctrl = self._ctrl_for(key)
+        sld = ctrl['slider']
+        sld.blockSignals(True)
+        sld.setRange(0, max_index)
+        if self.slice_index[key] > max_index:
+            self.slice_index[key] = max_index
+        sld.setValue(self.slice_index[key])
+        sld.blockSignals(False)
+
+    def _apply_sync_to_dataset(self, dst_key):
+        # Mirror File 1 axis/index to dst_key (clamped to bounds)
+        if self.data.get(dst_key) is None or self.data.get(1) is None:
+            return
+        axis_txt = self.slice_axis[1]
+        idx = self.slice_index[1]
+        self.slice_axis[dst_key] = axis_txt
+
+        dst_ctrl = self._ctrl_for(dst_key)
+        # Set axis combo (block signals to avoid recursion)
+        dst_ctrl['axis_combo'].blockSignals(True)
+        dst_ctrl['axis_combo'].setCurrentText(axis_txt)
+        dst_ctrl['axis_combo'].blockSignals(False)
+
+        # Clamp index to dst bounds
+        self._reset_slider_bounds(dst_key)
+        dst_sld = dst_ctrl['slider']
+        clamped = int(np.clip(idx, dst_sld.minimum(), dst_sld.maximum()))
+        dst_ctrl['slider'].blockSignals(True)
+        dst_ctrl['slider'].setValue(clamped)
+        dst_ctrl['slider'].blockSignals(False)
+        self.slice_index[dst_key] = clamped
+
+    # ------------------------- Plotting -------------------------
+    def _update_all_plots(self, key):
+        if self.data.get(key) is None:
+            return
+        self._update_summaries(key)
+        self._update_slice_plot(key)
+        self.fig.tight_layout()
+        self.canvas.draw_idle()
+
+    def _update_summaries(self, key):
+        data = self.data[key]
+        axes_row = self.axes[key]
+        # Clear the 3 summary axes
+        for i in range(3):
+            axes_row[i].clear()
+
+        num_types = data.shape[3]
+        colors = cm.get_cmap('tab20', max(10, num_types))
+
+        # Plot all types with highlight on selected
+        sel_t = self.selected_type[key]
+        for t in range(num_types):
+            vol = data[:, :, :, t]
+            x_vals = vol.sum(axis=(1, 2))
+            y_vals = vol.sum(axis=(0, 2))
+            z_vals = vol.sum(axis=(0, 1))
+
+            # Normalize using absolute max (so curves lie in [-1, 1])
+            def norm(v):
+                vmax = float(np.max(np.abs(v))) if v.size else 0.0
+                return (v / vmax) if vmax > 0 else v
+
+            series = [norm(x_vals), norm(y_vals), norm(z_vals)]
+            for i in range(3):
+                axes_row[i].plot(
+                    series[i],
+                    label=f"Type {t}",
+                    color=colors(t),
+                    linewidth=2 if t == sel_t else 1,
+                    alpha=1.0 if t == sel_t else 0.6
+                )
+
+        titles = ["X (ΣY,Z)", "Y (ΣX,Z)", "Z (ΣX,Y)"]
+        for i in range(3):
+            axes_row[i].set_title(titles[i])
+            axes_row[i].set_xlabel("Index")
+            axes_row[i].set_ylabel("Normalized Density")
+            axes_row[i].set_ylim(-1.05, 1.05)
+            # Dotted black zero-line for positive/negative reference
+            axes_row[i].axhline(0.0, color='black', linestyle=':')
+
+        # Orange slice line on the currently selected axis plot
+        axis_idx = AXIS_MAP[self.slice_axis[key]]
+        axes_row[axis_idx].axvline(self.slice_index[key], color='orange', linestyle='--')
+
+        # Legend below each plot
+        for i in range(3):
+            axes_row[i].legend(
+                loc='upper center',
+                bbox_to_anchor=(0.5, -0.15),
+                ncol=min(4, max(1, num_types)),
+                fontsize='small',
+                frameon=False
+            )
+
+    def _update_slice_plot(self, key):
+        """Update (or first-time create) the slice imshow + persistent colorbar without shrinking."""
+        data = self.data[key]
+        ax = self.axes[key][3]
+
+        # Compute 2D slice (ensure strictly 2D)
+        t = int(np.clip(self.selected_type[key], 0, data.shape[3]-1))
+        vol = data[:, :, :, t]
+        axis_txt = self.slice_axis[key]
+        idx = int(np.clip(self.slice_index[key], 0, vol.shape[AXIS_MAP[axis_txt]]-1))
+
+        if axis_txt == 'X':
+            slice_2d = vol[idx, :, :]
+            xlab, ylab = 'Y', 'Z'
+        elif axis_txt == 'Y':
+            slice_2d = vol[:, idx, :]
+            xlab, ylab = 'X', 'Z'
+        else:
+            slice_2d = vol[:, :, idx]
+            xlab, ylab = 'X', 'Y'
+
+        slice_2d = np.squeeze(slice_2d)
+        if slice_2d.ndim != 2:
+            QMessageBox.warning(self, "Slice Error", f"Unexpected slice shape {slice_2d.shape} for imshow.")
+            return
+
+        # Create once; then only update data + color limits + colorbar scaling.
+        if self.slice_images[key] is None:
+            ax.cla()  # clear once on first draw to ensure a clean axes
+            im = ax.imshow(slice_2d.T, origin='lower', aspect='auto', cmap='viridis')
+            ax.set_title(f"{axis_txt}-slice at {idx} (Type {t})")
+            ax.set_xlabel(xlab)
+            ax.set_ylabel(ylab)
+            # Create colorbar once and keep reference
+            cbar = ax.figure.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+            self.slice_images[key] = im
+            self.colorbars[key] = cbar
+        else:
+            # Update existing image & labels/clim; DO NOT recreate colorbar
+            im = self.slice_images[key]
+            im.set_data(slice_2d.T)
+            # Update color scaling to new data range
+            vmin = float(np.min(slice_2d)) if slice_2d.size else 0.0
+            vmax = float(np.max(slice_2d)) if slice_2d.size else 1.0
+            if vmin == vmax:
+                # Avoid zero range; expand slightly
+                eps = 1e-12
+                vmin -= eps
+                vmax += eps
+            im.set_clim(vmin=vmin, vmax=vmax)
+
+            ax.set_title(f"{axis_txt}-slice at {idx} (Type {t})")
+            ax.set_xlabel(xlab)
+            ax.set_ylabel(ylab)
+
+            # Refresh the existing colorbar to match updated image
+            if self.colorbars[key] is not None:
+                self.colorbars[key].update_normal(im)
+
+
+def main():
+    app = QApplication(sys.argv)
+    win = DensityExplorer()
+    win.show()
+    sys.exit(app.exec_())
+
+
+if __name__ == '__main__':
+    main()
