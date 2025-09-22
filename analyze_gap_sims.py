@@ -9,8 +9,12 @@ import subprocess
 #from matplotlib import pyplot as plt
 
 # post process the directories with data
-#base_dir = "/scratch/chdavis/exp_3_d/NP_BRUSH/Umin_-0.175/rad_2/den_0.3/gap_128/len_64/NP_4"
-base_dir = "/scratch/chdavis/exp_3_f/NP_BRUSH"
+#base_dir = "/scratch/chdavis/exp_4/NP_BRUSH/Umin_-0.175/rad_2/den_0.2/gap_0/len_128/NP_512"
+base_dir = "/scratch/chdavis/exp_4/NP_BRUSH/Umin_-0.175/rad_2/den_0.1"
+base_dir = "/scratch/chdavis/exp_4/NP_BRUSH/Umin_-0.175/rad_2/den_0.1/gap_32/len_128/NP_320"
+base_dir = "/scratch/chdavis/exp_4/NP_BRUSH/Umin_-0.175/rad_2/den_0.1/gap_32/len_32/NP_0"
+
+#base_dir = "/scratch/chdavis/exp_3_f/NP_BRUSH"
 processed = 0
 total = 0
 processing_missing = []
@@ -92,6 +96,10 @@ for root, dirs, files in os.walk(base_dir):
                     split_line = line.strip().split(" ")  # split the file line into its components
                     system_dimensions = [float(split_line[1]), float(split_line[2]), float(split_line[3])]
 
+        #This is here because the NP = 0 runs don't save a value .mpd file
+        if system_dimensions[0] <1:
+            continue
+
         warmup = .8
         frame_file = dir_base + "/frames_" + filename[:-4] + ".xyz"
 
@@ -103,7 +111,12 @@ for root, dirs, files in os.walk(base_dir):
         with open(dir_base + "/last_frame.xyz", 'w') as outfile:
             subprocess.run(['tail', f'-n{frame_lines}', frame_file], stdout=outfile, check=True)
 
-        voxel_array, error = gap_brush_analysis.build_density_voxels(frame_file, particles, warmup, system_dimensions, save_to_dir=True, dir_base=dir_base)
+        voxel_array, error = gap_brush_analysis.build_density_voxels(frame_file,
+                                                                     particles,
+                                                                     warmup,
+                                                                     system_dimensions,
+                                                                     save_to_dir=True,
+                                                                     dir_base=dir_base)
         print(error)
 
 

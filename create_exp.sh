@@ -40,7 +40,7 @@ mapfile -t slack < <(head -n 2 "$slack_file")
 
 #name the experiment
 exp_data='/scratch/chdavis'
-exp_name='exp_3_f'
+exp_name='exp_4'
 exp_type='NP_BRUSH'
 exp_dir="$exp_data/$exp_name/$exp_type"
 # Check if the directory exists
@@ -70,7 +70,8 @@ echo "Experiment directory $exp_dir"
 
 #the compiled mpd code home directory
 #mpd_dir='/home/chdavis/base_code/mpd-md'
-mpd_dir='/home/chdavis/CLionProjects/mpd-md'
+#mpd_dir='/home/chdavis/CLionProjects/mpd-md'
+mpd_dir='/home/chdavis/SoftMold'
 if [ -d "$mpd_dir" ]; then
   echo "mpd directory exists: $mpd_dir"
 else
@@ -103,8 +104,8 @@ else
 fi
 
 time_adjust="$mpd_dir/analysis/changeTime"
-gamma_adjust="$mpd_dir/bin/changeGamma"
-int_adjust="$mpd_dir/bin/changeIntervals"
+gamma_adjust="$mpd_dir/analysis/changeGamma"
+int_adjust="$mpd_dir/analysis/changeIntervals"
 time_delta="$mpd_dir/analysis/changeDeltaT"
 
 if [ -f "$time_adjust" ] && [ -f "$int_adjust" ] && [ -f "$time_delta" ] ; then

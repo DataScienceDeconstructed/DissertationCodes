@@ -8,11 +8,18 @@ def build_density_voxels(filename,
                      unit_voxel = [1.0, 1.0, 1.0],
                      save_to_dir=False,
                      dir_base=""):
+    eps = 0.0001
+    unit_voxel[0] = system_dimensions[0] / float(int(system_dimensions[0]))
+    unit_voxel[1] = system_dimensions[1] / float(int(system_dimensions[1]))
+    unit_voxel[2] = system_dimensions[2] / float(int(system_dimensions[2]))
 
     print("particles\t", parts)
-    voxel_array_dims = (int(system_dimensions[0]//unit_voxel[0]) + 1,
-                        int(system_dimensions[1]//unit_voxel[1]) + 1,
-                        int(system_dimensions[2]//unit_voxel[2]) + 1,
+    # a note about the np.round: since we are dividing the array into an integer number in each direction.
+    # the floating point division can go either a little above or a little below the correct
+    # value 120.0000000001 or 199.999999999 so the rounding helps make sure we have the right number.
+    voxel_array_dims = (int( np.round( system_dimensions[0]/unit_voxel[0])) ,
+                        int( np.round( system_dimensions[1]/unit_voxel[1])) ,
+                        int( np.round( system_dimensions[2]/unit_voxel[2])),
                         2)
     error = True
 
@@ -22,6 +29,8 @@ def build_density_voxels(filename,
     warmup = int((100000/100*(parts+2)) * equil_percent)
     print("Warmup \t", warmup)
     postwarmup = 0
+
+    oob = 0
 
     last_line = 0
     with open(filename, 'r') as fp:
@@ -45,9 +54,25 @@ def build_density_voxels(filename,
                 y = int(float(split_line[2])/unit_voxel[1])
                 z = int(float(split_line[3])/unit_voxel[2])
                 p = int(split_line[0]) - 1 # indexing particle type 0 = monomer, 1 = NP
-                voxel_array[x][y][z][p] += 1
+                if float(split_line[1]) > system_dimensions[0]:
+                    x  = int( ( float(split_line[1]) - system_dimensions[0])/unit_voxel[0])
+                    oob += 1
+                if float(split_line[2]) > system_dimensions[1]:
+                    y  = int( ( float(split_line[2]) - system_dimensions[1])/unit_voxel[1])
+                    oob += 1
+                if float(split_line[3]) > system_dimensions[2]:
+                    z = int( ( float(split_line[3]) - eps)/unit_voxel[2])
+                    oob += 1
+                try:
+                    voxel_array[x][y][z][p] += 1
+                except Exception as e:
+                    print (e)
+                    print ("x ",x,"\ty ",y,"\tz ",z)
+                    print (system_dimensions)
+                    print(voxel_array.shape)
 
         print("last line: {}".format(last_line))
+        print("oob: {}".format(oob))
 
         if (save_to_dir):
             with open(dir_base + "/voxel_data.dat", 'wb') as fp:
