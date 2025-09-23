@@ -1,6 +1,49 @@
 import numpy as np
 
+def calc_RDP(_filename,
+             _system_dims,
+             _parts,
+             _gap,
+             _NPs,
+             _max_height):
+    part_data = np.zeros((_NPs,3))
+    NP_count = 0
 
+    # retrieve NP locations
+    with open(_filename, 'r') as fp:
+        for i, line in enumerate(fp):
+
+            if i < 2:
+                continue
+            split_line = line.strip().split("\t")  # split the file line into its components
+            if split_line[0] == '2':
+                part_data[NP_count,0] = float(split_line[1])
+                part_data[NP_count,1] = float(split_line[2])
+                part_data[NP_count,2] = float(split_line[3])
+                NP_count += 1
+
+    if NP_count != _NPs:
+        print(NP_count, "is not what was passed in i.e. ", _NPs)
+
+    border = _system_dims[0] - _gap
+
+    brush_mask =  part_data[:,0] < border
+    gap_mask = part_data[:,0] > border
+
+    brush_data = part_data[brush_mask]
+    gap_data = part_data[gap_mask]
+
+    # Compute pairwise differences between vectors (rows)
+    pairwise_brush_diff = brush_data[:, None, :] - brush_data[None, :, :]
+    pairwise_gap_diff = gap_data[:, None, :] - gap_data[None, :, :]
+
+    brush_distances = np.linalg.norm(pairwise_brush_diff, axis=-1)
+    gap_distances = np.linalg.norm(pairwise_gap_diff, axis=-1)
+
+    brush_hist = np.histogram(brush_distances, bins=int(_system_dims[0]) )
+    gap_hist =  np.histogram(gap_distances, bins=int(_system_dims[0]) )
+
+    return rValue
 def build_density_voxels(filename,
                      parts,         # particles in the simulation
                      equil_percent,   # 1 minus what percentage of the simulation time to include in the calculation
