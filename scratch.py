@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use("Qt5Agg")
 
-base_dir = "/scratch/chdavis/exp_4/NP_BRUSH/Umin_-0.175/rad_2/den_0.1/gap_0/len_32/NP_320"
+base_dir = "/scratch/chdavis/exp_4/NP_BRUSH/Umin_-0.175/rad_2/den_0.1/gap_0/len_32/NP_1024"
 
 voxels = np.load(base_dir + "/voxel_data.dat", allow_pickle=False)
 # Check shape

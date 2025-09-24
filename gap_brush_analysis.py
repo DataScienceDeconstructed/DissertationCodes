@@ -5,9 +5,20 @@ def calc_RDP(_filename,
              _parts,
              _gap,
              _NPs,
+             _monos,
+             _poly_len,
              _max_height):
-    part_data = np.zeros((_NPs,3))
-    NP_count = 0
+
+    part_data_brush = np.zeros((_NPs,3))
+    part_data_gap = np.zeros((_NPs, 3))
+
+    NPs_brush = 0
+    NPs_gap = 0
+    border = _system_dims[0] - _gap
+    height_array = np.zeros((2, int(_system_dims[2])+1 ))
+    height_cum_array = np.zeros((2, int(_system_dims[2]) + 1))
+
+    height_top_percentage = 1.0 - (1./float(_poly_len)*0.5) # this should give us half the end points of the polymers
 
     # retrieve NP locations
     with open(_filename, 'r') as fp:
@@ -17,25 +28,31 @@ def calc_RDP(_filename,
                 continue
             split_line = line.strip().split("\t")  # split the file line into its components
             if split_line[0] == '2':
-                part_data[NP_count,0] = float(split_line[1])
-                part_data[NP_count,1] = float(split_line[2])
-                part_data[NP_count,2] = float(split_line[3])
-                NP_count += 1
 
-    if NP_count != _NPs:
-        print(NP_count, "is not what was passed in i.e. ", _NPs)
+                if float(split_line[1]) < border :
+                    part_data_brush[NPs_brush,0] = float(split_line[1])
+                    part_data_brush[NPs_brush,1] = float(split_line[2])
+                    part_data_brush[NPs_brush,2] = float(split_line[3])
+                else:
+                    part_data_gap[NPs_gap, 0] = float(split_line[1])
+                    part_data_gap[NPs_gap, 1] = float(split_line[2])
+                    part_data_gap[NPs_gap, 2] = float(split_line[3])
 
-    border = _system_dims[0] - _gap
+            if split_line[0] == '1':
 
-    brush_mask =  part_data[:,0] < border
-    gap_mask = part_data[:,0] > border
+                if float(split_line[1]) < border:
+                    height_array[0,int(split_line[3])] += 1
+                else:
+                    height_array[0, int(split_line[3])] += 1
 
-    brush_data = part_data[brush_mask]
-    gap_data = part_data[gap_mask]
+    height_array[0, :] /= np.sum(height_array[0, :])
+    height_array[1, :] /= np.sum(height_array[1, :])
+
+
 
     # Compute pairwise differences between vectors (rows)
-    pairwise_brush_diff = brush_data[:, None, :] - brush_data[None, :, :]
-    pairwise_gap_diff = gap_data[:, None, :] - gap_data[None, :, :]
+    pairwise_brush_diff = part_data_brush[:, None, :] - part_data_brush[None, :, :]
+    pairwise_gap_diff = part_data_gap[:, None, :] - part_data_gap[None, :, :]
 
     brush_distances = np.linalg.norm(pairwise_brush_diff, axis=-1)
     gap_distances = np.linalg.norm(pairwise_gap_diff, axis=-1)
@@ -43,7 +60,7 @@ def calc_RDP(_filename,
     brush_hist = np.histogram(brush_distances, bins=int(_system_dims[0]) )
     gap_hist =  np.histogram(gap_distances, bins=int(_system_dims[0]) )
 
-    return rValue
+    return
 def build_density_voxels(filename,
                      parts,         # particles in the simulation
                      equil_percent,   # 1 minus what percentage of the simulation time to include in the calculation
