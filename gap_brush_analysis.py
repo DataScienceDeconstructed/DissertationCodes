@@ -5,9 +5,7 @@ def calc_RDP(_filename,
              _parts,
              _gap,
              _NPs,
-             _monos,
-             _poly_len,
-             _max_height):
+             _poly_len):
 
     part_data_brush = np.zeros((_NPs,3))
     part_data_gap = np.zeros((_NPs, 3))
@@ -41,18 +39,27 @@ def calc_RDP(_filename,
             if split_line[0] == '1':
 
                 if float(split_line[1]) < border:
-                    height_array[0,int(split_line[3])] += 1
+                    height_array[0, int(float(split_line[3]))] += 1
                 else:
-                    height_array[0, int(split_line[3])] += 1
+                    height_array[1, int(float(split_line[3]))] += 1
 
     height_array[0, :] /= np.sum(height_array[0, :])
     height_array[1, :] /= np.sum(height_array[1, :])
 
+    height_cum_array[0, :] = np.cumsum(height_array[0, :])
+    height_cum_array[1, :] = np.cumsum(height_array[1, :])
 
+    #since the height arrays are of length Z units the index is the height of the brush needed
+    index_brush = np.argmax(height_cum_array[0, :] > height_top_percentage)
+    index_gap   = np.argmax(height_cum_array[1, :] > height_top_percentage)
 
-    # Compute pairwise differences between vectors (rows)
-    pairwise_brush_diff = part_data_brush[:, None, :] - part_data_brush[None, :, :]
-    pairwise_gap_diff = part_data_gap[:, None, :] - part_data_gap[None, :, :]
+    # filter rows where the 3rd element > threshold
+    filtered_brush = part_data_brush[part_data_brush[:, 2] > index_brush]
+    filtered_gap = part_data_gap[part_data_gap[:, 2] > index_gap]
+
+    # now compute pairwise differences on this reduced array
+    pairwise_brush_diff = filtered_brush[:, None, :] - filtered_brush[None, :, :]
+    pairwise_gap_diff = filtered_gap[:, None, :] - filtered_gap[None, :, :]
 
     brush_distances = np.linalg.norm(pairwise_brush_diff, axis=-1)
     gap_distances = np.linalg.norm(pairwise_gap_diff, axis=-1)

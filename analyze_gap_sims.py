@@ -10,8 +10,8 @@ import subprocess
 
 # post process the directories with data
 #base_dir = "/scratch/chdavis/exp_4/NP_BRUSH/Umin_-0.175/rad_2/den_0.2/gap_0/len_128/NP_512"
-base_dir = "/scratch/chdavis/exp_4/NP_BRUSH/Umin_-0.175/rad_2/den_0.1"
-#base_dir = "/scratch/chdavis/exp_4/NP_BRUSH/Umin_-0.175/rad_2/den_0.1/gap_32/len_128/NP_320"
+#base_dir = "/scratch/chdavis/exp_4/NP_BRUSH/Umin_-0.175/rad_2/den_0.1"
+base_dir = "/scratch/chdavis/exp_4/NP_BRUSH/Umin_-0.175/rad_2/den_0.1/gap_32/len_128/NP_320"
 #base_dir = "/scratch/chdavis/exp_4/NP_BRUSH/Umin_-0.175/rad_2/den_0.1/gap_32/len_32/NP_0"
 
 #base_dir = "/scratch/chdavis/exp_3_f/NP_BRUSH"
@@ -111,6 +111,12 @@ for root, dirs, files in os.walk(base_dir):
         with open(dir_base + "/last_frame.xyz", 'w') as outfile:
             subprocess.run(['tail', f'-n{frame_lines}', frame_file], stdout=outfile, check=True)
 
+        RDF = gap_brush_analysis.calc_RDP(dir_base + "/last_frame.xyz",
+                                          system_dimensions,
+                                          particles,
+                                          gap_len,
+                                          num_NPs,
+                                          poly_len)
         voxel_array, error = gap_brush_analysis.build_density_voxels(frame_file,
                                                                      particles,
                                                                      warmup,
