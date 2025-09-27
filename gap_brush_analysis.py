@@ -31,10 +31,12 @@ def calc_RDP(_filename,
                     part_data_brush[NPs_brush,0] = float(split_line[1])
                     part_data_brush[NPs_brush,1] = float(split_line[2])
                     part_data_brush[NPs_brush,2] = float(split_line[3])
+                    NPs_brush += 1
                 else:
                     part_data_gap[NPs_gap, 0] = float(split_line[1])
                     part_data_gap[NPs_gap, 1] = float(split_line[2])
                     part_data_gap[NPs_gap, 2] = float(split_line[3])
+                    NPs_gap += 1
 
             if split_line[0] == '1':
 
@@ -53,9 +55,9 @@ def calc_RDP(_filename,
     index_brush = np.argmax(height_cum_array[0, :] > height_top_percentage)
     index_gap   = np.argmax(height_cum_array[1, :] > height_top_percentage)
 
-    # filter rows where the 3rd element > threshold
-    filtered_brush = part_data_brush[part_data_brush[:, 2] > index_brush]
-    filtered_gap = part_data_gap[part_data_gap[:, 2] > index_gap]
+    # filter rows where the Z component < threshold "particles in the brush"
+    filtered_brush = part_data_brush[((part_data_brush[:, 2] < index_brush) & (part_data_brush[:, 2] > 1))]
+    filtered_gap = part_data_gap[((part_data_gap[:, 2] < index_gap) & (part_data_gap[:, 2] > 1))]
 
     # now compute pairwise differences on this reduced array
     pairwise_brush_diff = filtered_brush[:, None, :] - filtered_brush[None, :, :]
@@ -64,8 +66,8 @@ def calc_RDP(_filename,
     brush_distances = np.linalg.norm(pairwise_brush_diff, axis=-1)
     gap_distances = np.linalg.norm(pairwise_gap_diff, axis=-1)
 
-    brush_hist = np.histogram(brush_distances, bins=int(_system_dims[0]) )
-    gap_hist =  np.histogram(gap_distances, bins=int(_system_dims[0]) )
+    brush_hist = np.histogram(brush_distances, bins=np.arange(0,int(_system_dims[0]+1)) )
+    gap_hist =  np.histogram(gap_distances, bins=np.arange(0,int(_system_dims[0]+1)) )
 
     return
 def build_density_voxels(filename,
