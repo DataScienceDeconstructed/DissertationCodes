@@ -122,6 +122,7 @@ def calc_RDP(_filename,
 
     brush_hist_normalizer = [ 1.0/ ((x+1)**3 - x**3) for x in np.arange(0,int(_system_dims[0]))]
     plt.plot(brush_hist[0][1:]*brush_hist_normalizer[1:])
+    plt.plot(brush_hist[0][1:] )
     plt.show()
     plt.plot(gap_hist[0])
     plt.show()
