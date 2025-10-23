@@ -1,6 +1,7 @@
 import sys
 import os
 import numpy as np
+from pathlib import Path
 import matplotlib
 matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
@@ -38,7 +39,7 @@ class DensityExplorer(QMainWindow):
         # Data storage
         self.data = {1: None, 2: None, 'diff': None}
         self.paths = {1: None, 2: None}
-
+        self.last_frame = {1: None, 2: None}
         # Per-dataset UI state
         self.selected_type = {1: 0, 2: 0, 'diff': 0}
         self.slice_axis = {1: 'Z', 2: 'Z', 'diff': 'Z'}
@@ -206,6 +207,11 @@ class DensityExplorer(QMainWindow):
 
         self.data[file_id] = arr
         self.paths[file_id] = path
+
+        last_frame_path = Path(path)
+        parent_path = str(last_frame_path.parent)
+        last_frame_str = parent_path +"/last_frame.xyz"
+        self.last_frame_path[file_id] = last_frame_str
 
         # Reset slice artists for this dataset (so first draw recreates imshow + cbar once)
         self._reset_slice_artists(file_id)
@@ -542,6 +548,46 @@ class DensityExplorer(QMainWindow):
             if self.colorbars[key] is not None:
                 self.colorbars[key].update_normal(im)
 
+        if key == 1:
+            key = 2
+            #grab new axis object
+            ax = self.axes[key][3]
+
+            slice_xy = slice_2d - np.mean(slice_2d)
+            fft2d = np.fft.fftshift(np.fft.fft2(slice_xy))
+            slice_2d =  np.abs(fft2d)
+
+            if self.slice_images[key] is None:
+                ax.cla()  # clear once on first draw to ensure a clean axes
+                im = ax.imshow(slice_2d.T, origin='lower', aspect='auto', cmap='viridis')
+                ax.set_title(f"{axis_txt}-slice at {idx} (Type {t})")
+                ax.set_xlabel(xlab)
+                ax.set_ylabel(ylab)
+                # Create colorbar once and keep reference
+                cbar = ax.figure.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+                self.slice_images[key] = im
+                self.colorbars[key] = cbar
+            else:
+                # Update existing image & labels/clim; DO NOT recreate colorbar
+                im = self.slice_images[key]
+                im.set_data(slice_2d.T)
+                # Update color scaling to new data range
+                vmin = float(np.min(slice_2d)) if slice_2d.size else 0.0
+                vmax = float(np.max(slice_2d)) if slice_2d.size else 1.0
+                if vmin == vmax:
+                    # Avoid zero range; expand slightly
+                    eps = 1e-12
+                    vmin -= eps
+                    vmax += eps
+                im.set_clim(vmin=vmin, vmax=vmax)
+
+                ax.set_title(f"{axis_txt}-slice at {idx} (Type {t})")
+                ax.set_xlabel(xlab)
+                ax.set_ylabel(ylab)
+
+                # Refresh the existing colorbar to match updated image
+                if self.colorbars[key] is not None:
+                    self.colorbars[key].update_normal(im)
 
 def main():
     app = QApplication(sys.argv)
