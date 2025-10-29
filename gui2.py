@@ -15,6 +15,8 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt
 
+import gap_brush_analysis
+
 # ---------------- Constants ----------------
 VARS = ["Umin", "rad", "den", "gap", "len", "NP"]
 AXIS_MAP = {"X": 0, "Y": 1, "Z": 2}
@@ -39,7 +41,7 @@ class DensityExplorer(QMainWindow):
         # Data storage
         self.data = {1: None, 2: None, 'diff': None}
         self.paths = {1: None, 2: None}
-        self.last_frame = {1: None, 2: None}
+        self.last_frame_path = {1: None, 2: None}
         # Per-dataset UI state
         self.selected_type = {1: 0, 2: 0, 'diff': 0}
         self.slice_axis = {1: 'Z', 2: 'Z', 'diff': 'Z'}
@@ -212,6 +214,21 @@ class DensityExplorer(QMainWindow):
         parent_path = str(last_frame_path.parent)
         last_frame_str = parent_path +"/last_frame.xyz"
         self.last_frame_path[file_id] = last_frame_str
+        vals = {v: 'missing' for v in VARS}
+        for part in os.path.normpath(
+                self.last_frame_path[file_id]
+                ).split(os.sep):
+            if '_' in part:
+                name, value = part.split('_', 1)
+                if name in vals:
+                    vals[name] = value
+
+        RDPs = gap_brush_analysis.calc_2D_RDP(self.last_frame_path[file_id],
+                                              arr.shape[:3],
+                                              int(vals['gap']),
+                                              int(vals['NP']),
+                                              int(vals['len'])
+                                              )
 
         # Reset slice artists for this dataset (so first draw recreates imshow + cbar once)
         self._reset_slice_artists(file_id)

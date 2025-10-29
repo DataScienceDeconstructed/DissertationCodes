@@ -128,6 +128,121 @@ def calc_RDP(_filename,
     plt.show()
 
     return
+def calc_2D_RDP(_filename,
+             _system_dims,
+             #_parts,
+             _gap,
+             _NPs,
+             _poly_len):
+
+    part_data_brush = np.zeros((_NPs,3))
+    part_data_gap = np.zeros((_NPs, 3))
+
+    NPs_brush = 0
+    NPs_gap = 0
+    border = _system_dims[0] - _gap
+    #height_array = np.zeros((2, int(_system_dims[2])+1 ))
+    #height_cum_array = np.zeros((2, int(_system_dims[2]) + 1))
+
+    #height_top_percentage = 1.0 - (1./float(_poly_len)*0.5) # this should give us half the end points of the polymers
+
+    # retrieve NP locations
+    with open(_filename, 'r') as fp:
+        for i, line in enumerate(fp):
+
+            if i < 2:
+                continue
+            split_line = line.strip().split("\t")  # split the file line into its components
+            if split_line[0] == '2':
+
+                if float(split_line[1]) < border :
+                    part_data_brush[NPs_brush,0] = float(split_line[1])
+                    part_data_brush[NPs_brush,1] = float(split_line[2])
+                    part_data_brush[NPs_brush,2] = float(split_line[3])
+                    NPs_brush += 1
+                else:
+                    part_data_gap[NPs_gap, 0] = float(split_line[1])
+                    part_data_gap[NPs_gap, 1] = float(split_line[2])
+                    part_data_gap[NPs_gap, 2] = float(split_line[3])
+                    NPs_gap += 1
+
+    # cycle through the z axis
+
+    # filter rows where the Z component < threshold "particles in the brush"
+    #filtered_brush = part_data_brush[((part_data_brush[:, 2] < index_brush) & (part_data_brush[:, 2] > 1))]
+    filtered_brush = [part_data_brush[((part_data_brush[:, 2] > z) & (part_data_brush[:, 2] < (z+1) ) )]
+                      for z in range(_system_dims[2])]
+#good to right here
+    #filtered_gap = part_data_gap[((part_data_gap[:, 2] < index_gap) & (part_data_gap[:, 2] > 1))]
+    filtered_gap = [part_data_gap[((part_data_gap[:, 2] > z) & (part_data_gap[:, 2] < (z+1) ) )]
+                    for z in range(_system_dims[2])]
+
+    # now compute pairwise differences on this reduced array
+    ### section need to be redone to take into account PBCs
+    pairwise_brush_diff = filtered_brush[:, None, :] - filtered_brush[None, :, :]
+    pairwise_gap_diff = filtered_gap[:, None, :] - filtered_gap[None, :, :]
+
+    #adjust for PBC
+    threshold_x = _system_dims[0] / 2.0
+    threshold_y = _system_dims[1] / 2.0
+
+    #in the brush
+    # Work only on the x entry along the last axis
+    mask_x = pairwise_brush_diff[:, :, 0] > threshold_x  # shape (N, N)
+    # Apply subtraction where condition is met
+    pairwise_brush_diff[:, :, 0] = np.where(
+        mask_x,
+        _system_dims[0] - pairwise_brush_diff[:, :, 0],
+        pairwise_brush_diff[:, :, 0]
+    )
+
+    #in the brush
+    # Work only on the x entry along the last axis
+    mask_x = pairwise_brush_diff[:, :, 0] < -1.0*threshold_x  # shape (N, N)
+    # Apply subtraction where condition is met
+    pairwise_brush_diff[:, :, 0] = np.where(
+        mask_x,
+        _system_dims[0] + pairwise_brush_diff[:, :, 0],
+        pairwise_brush_diff[:, :, 0]
+    )
+
+    #in the brush
+    # Work only on the y entry along the last axis
+    mask_y = pairwise_brush_diff[:, :, 1] > threshold_y  # shape (N, N)
+    # Apply subtraction where condition is met
+    pairwise_brush_diff[:, :, 1] = np.where(
+        mask_y,
+        _system_dims[1] - pairwise_brush_diff[:, :, 1],
+        pairwise_brush_diff[:, :, 1]
+    )
+
+    #in the brush
+    # Work only on the y entry along the last axis
+    mask_y = pairwise_brush_diff[:, :, 1] < -1.0*threshold_y  # shape (N, N)
+    # Apply subtraction where condition is met
+    pairwise_brush_diff[:, :, 1] = np.where(
+        mask_y,
+        _system_dims[1] + pairwise_brush_diff[:, :, 1],
+        pairwise_brush_diff[:, :, 1]
+    )
+
+    brush_distances = np.linalg.norm(pairwise_brush_diff, axis=-1)
+    gap_distances = np.linalg.norm(pairwise_gap_diff, axis=-1)
+    ### end of section needing redo
+
+    brush_hist = np.histogram(brush_distances, bins=np.arange(0,int(_system_dims[0]+1)) )
+    gap_hist =  np.histogram(gap_distances, bins=np.arange(0,int(_system_dims[0]+1)) )
+
+    brush_hist_normalizer = [ 1.0/ ((x+1)**3 - x**3) for x in np.arange(0,int(_system_dims[0]))]
+    plt.plot(brush_hist[0][1:]*brush_hist_normalizer[1:])
+    plt.plot(brush_hist[0][1:] )
+    plt.show()
+    plt.plot(gap_hist[0])
+    plt.show()
+
+    return
+
+
 def build_density_voxels(filename,
                      parts,         # particles in the simulation
                      equil_percent,   # 1 minus what percentage of the simulation time to include in the calculation
