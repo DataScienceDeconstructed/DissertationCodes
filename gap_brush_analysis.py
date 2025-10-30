@@ -174,73 +174,81 @@ def calc_2D_RDP(_filename,
                       for z in range(_system_dims[2])]
 #good to right here
     #filtered_gap = part_data_gap[((part_data_gap[:, 2] < index_gap) & (part_data_gap[:, 2] > 1))]
-    filtered_gap = [part_data_gap[((part_data_gap[:, 2] > z) & (part_data_gap[:, 2] < (z+1) ) )]
+    filtered_gap =   [part_data_gap[((part_data_gap[:, 2] > z) & (part_data_gap[:, 2] < (z+1) ) )]
                     for z in range(_system_dims[2])]
 
     # now compute pairwise differences on this reduced array
     ### section need to be redone to take into account PBCs
-    pairwise_brush_diff = filtered_brush[:, None, :] - filtered_brush[None, :, :]
-    pairwise_gap_diff = filtered_gap[:, None, :] - filtered_gap[None, :, :]
+    #pairwise_brush_diff = filtered_brush[:, None, :] - filtered_brush[None, :, :]
+    pairwise_brush_diff = [ filtered_brush_layer[:, None, :] - filtered_brush_layer[None, :, :]
+        for filtered_brush_layer in filtered_brush]
+    pairwise_gap_diff   = [filtered_gap_layer[:, None, :] - filtered_gap_layer[None, :, :]
+        for filtered_gap_layer in filtered_gap]
 
     #adjust for PBC
     threshold_x = _system_dims[0] / 2.0
     threshold_y = _system_dims[1] / 2.0
 
-    #in the brush
-    # Work only on the x entry along the last axis
-    mask_x = pairwise_brush_diff[:, :, 0] > threshold_x  # shape (N, N)
-    # Apply subtraction where condition is met
-    pairwise_brush_diff[:, :, 0] = np.where(
-        mask_x,
-        _system_dims[0] - pairwise_brush_diff[:, :, 0],
-        pairwise_brush_diff[:, :, 0]
-    )
+    for i in range(len(pairwise_brush_diff)):
+        #in the brush
+        # Work only on the x entry along the last axis
+        mask_x = pairwise_brush_diff[i][:, :, 0] > threshold_x  # shape (N, N)
+        # Apply subtraction where condition is met
+        pairwise_brush_diff[i][:, :, 0] = np.where(
+            mask_x,
+            _system_dims[0] - pairwise_brush_diff[i][:, :, 0],
+            pairwise_brush_diff[i][:, :, 0]
+        )
 
-    #in the brush
-    # Work only on the x entry along the last axis
-    mask_x = pairwise_brush_diff[:, :, 0] < -1.0*threshold_x  # shape (N, N)
-    # Apply subtraction where condition is met
-    pairwise_brush_diff[:, :, 0] = np.where(
-        mask_x,
-        _system_dims[0] + pairwise_brush_diff[:, :, 0],
-        pairwise_brush_diff[:, :, 0]
-    )
+        #in the brush
+        # Work only on the x entry along the last axis
+        mask_x = pairwise_brush_diff[i][:, :, 0] < -1.0*threshold_x  # shape (N, N)
+        # Apply subtraction where condition is met
+        pairwise_brush_diff[i][:, :, 0] = np.where(
+            mask_x,
+            _system_dims[0] + pairwise_brush_diff[i][:, :, 0],
+            pairwise_brush_diff[i][:, :, 0]
+        )
 
-    #in the brush
-    # Work only on the y entry along the last axis
-    mask_y = pairwise_brush_diff[:, :, 1] > threshold_y  # shape (N, N)
-    # Apply subtraction where condition is met
-    pairwise_brush_diff[:, :, 1] = np.where(
-        mask_y,
-        _system_dims[1] - pairwise_brush_diff[:, :, 1],
-        pairwise_brush_diff[:, :, 1]
-    )
+        #in the brush
+        # Work only on the y entry along the last axis
+        mask_y = pairwise_brush_diff[i][:, :, 1] > threshold_y  # shape (N, N)
+        # Apply subtraction where condition is met
+        pairwise_brush_diff[i][:, :, 1] = np.where(
+            mask_y,
+            _system_dims[1] - pairwise_brush_diff[i][:, :, 1],
+            pairwise_brush_diff[i][:, :, 1]
+        )
 
-    #in the brush
-    # Work only on the y entry along the last axis
-    mask_y = pairwise_brush_diff[:, :, 1] < -1.0*threshold_y  # shape (N, N)
-    # Apply subtraction where condition is met
-    pairwise_brush_diff[:, :, 1] = np.where(
-        mask_y,
-        _system_dims[1] + pairwise_brush_diff[:, :, 1],
-        pairwise_brush_diff[:, :, 1]
-    )
+        #in the brush
+        # Work only on the y entry along the last axis
+        mask_y = pairwise_brush_diff[i][:, :, 1] < -1.0*threshold_y  # shape (N, N)
+        # Apply subtraction where condition is met
+        pairwise_brush_diff[i][:, :, 1] = np.where(
+            mask_y,
+            _system_dims[1] + pairwise_brush_diff[i][:, :, 1],
+            pairwise_brush_diff[i][:, :, 1]
+        )
 
-    brush_distances = np.linalg.norm(pairwise_brush_diff, axis=-1)
-    gap_distances = np.linalg.norm(pairwise_gap_diff, axis=-1)
+    brush_distances = [np.linalg.norm(pairwise_brush_diff_layer, axis=-1)
+                       for pairwise_brush_diff_layer in pairwise_brush_diff]
+    gap_distances = [np.linalg.norm(pairwise_gap_diff_layer, axis=-1)
+                     for pairwise_gap_diff_layer in pairwise_gap_diff]
     ### end of section needing redo
 
-    brush_hist = np.histogram(brush_distances, bins=np.arange(0,int(_system_dims[0]+1)) )
-    gap_hist =  np.histogram(gap_distances, bins=np.arange(0,int(_system_dims[0]+1)) )
+    brush_hists = [np.histogram(brush_distances_layer, bins=np.arange(0,int(_system_dims[0]+1)) )
+                  for brush_distances_layer in brush_distances]
+    gap_hists =  [np.histogram(gap_distances_layer, bins=np.arange(0,int(_system_dims[0]+1)) )
+                 for gap_distances_layer in gap_distances]
 
-    brush_hist_normalizer = [ 1.0/ ((x+1)**3 - x**3) for x in np.arange(0,int(_system_dims[0]))]
-    plt.plot(brush_hist[0][1:]*brush_hist_normalizer[1:])
-    plt.plot(brush_hist[0][1:] )
-    plt.show()
-    plt.plot(gap_hist[0])
+    brush_hist_normalizer = [ 1.0/ ((x+1)**2 - x**2) for x in np.arange(0,int(_system_dims[0]))]
+
+    normed_brush = [brush_hist[0][1:]*brush_hist_normalizer[1:] for brush_hist in brush_hists]
+
+    plt.plot(normed_brush[5])
     plt.show()
 
-    return
+    return normed_brush
 
 
 def build_density_voxels(filename,
