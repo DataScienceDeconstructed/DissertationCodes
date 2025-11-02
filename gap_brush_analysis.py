@@ -243,12 +243,16 @@ def calc_2D_RDP(_filename,
 
     brush_hist_normalizer = [ 1.0/ ((x+1)**2 - x**2) for x in np.arange(0,int(_system_dims[0]))]
 
+    #note that gap hist normalization needs to account for the fact that the circles aren't completely in the gap
+    gap_hist_normalizer = [1.0 / ((x + 1) ** 2 - x ** 2) for x in np.arange(0, int(_system_dims[0]))]
+
     normed_brush = [brush_hist[0][1:]*brush_hist_normalizer[1:] for brush_hist in brush_hists]
+    normed_gap = [gap_hist[0][1:] * gap_hist_normalizer[1:] for gap_hist in gap_hists]
 
-    plt.plot(normed_brush[5])
-    plt.show()
+    # plt.plot(normed_brush[5])
+    # plt.show()
 
-    return normed_brush
+    return normed_brush, normed_gap
 
 
 def build_density_voxels(filename,

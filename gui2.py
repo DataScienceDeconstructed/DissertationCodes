@@ -51,7 +51,7 @@ class DensityExplorer(QMainWindow):
         # Persistent artists for slice panels
         self.slice_images = {1: None, 2: None, 'diff': None}   # matplotlib.image.AxesImage
         self.colorbars    = {1: None, 2: None, 'diff': None}   # matplotlib.colorbar.Colorbar
-
+        self.RDPs = {1: {'brush': None, 'gap': None}, 2: {'brush': None, 'gap': None}}
         self._build_ui()
 
     # ----------------------------- UI -----------------------------
@@ -162,6 +162,8 @@ class DensityExplorer(QMainWindow):
         row['var_labels'] = var_labels
         return row
 
+
+
     def _init_empty_plots(self):
         titles = ["X (ΣY,Z)", "Y (ΣX,Z)", "Z (ΣX,Y)"]
         for key in (1, 2, 'diff'):
@@ -223,7 +225,7 @@ class DensityExplorer(QMainWindow):
                 if name in vals:
                     vals[name] = value
 
-        RDPs = gap_brush_analysis.calc_2D_RDP(self.last_frame_path[file_id],
+        self.RDPs[file_id]['brush'],self.RDPs[file_id]['gap'] = gap_brush_analysis.calc_2D_RDP(self.last_frame_path[file_id],
                                               arr.shape[:3],
                                               int(vals['gap']),
                                               int(vals['NP']),
@@ -568,6 +570,21 @@ class DensityExplorer(QMainWindow):
         if key == 1:
             key = 2
             #grab new axis object
+
+            axes_row = self.axes[key]
+            # Clear the 3 summary axes
+            for i in range(3):
+                axes_row[i].clear()
+
+            axes_row[2].set_title("Z Plane RDP")
+            axes_row[2].plot(
+                self.RDPs[1]['brush'][self.slice_index[1]],
+                label="RDP for Z plane",
+                linewidth=1,
+                alpha=1.0,
+
+            )
+
             ax = self.axes[key][3]
 
             slice_xy = slice_2d - np.mean(slice_2d)
@@ -577,7 +594,7 @@ class DensityExplorer(QMainWindow):
             if self.slice_images[key] is None:
                 ax.cla()  # clear once on first draw to ensure a clean axes
                 im = ax.imshow(slice_2d.T, origin='lower', aspect='auto', cmap='viridis')
-                ax.set_title(f"{axis_txt}-slice at {idx} (Type {t})")
+                ax.set_title(f"Z Plane FFT at {idx} (Type {t})")
                 ax.set_xlabel(xlab)
                 ax.set_ylabel(ylab)
                 # Create colorbar once and keep reference
@@ -605,6 +622,8 @@ class DensityExplorer(QMainWindow):
                 # Refresh the existing colorbar to match updated image
                 if self.colorbars[key] is not None:
                     self.colorbars[key].update_normal(im)
+
+
 
 def main():
     app = QApplication(sys.argv)
