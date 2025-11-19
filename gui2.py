@@ -235,7 +235,7 @@ class DensityExplorer(QMainWindow):
                     vals[name] = value
 
 
-        self.RDPs[file_id]['brush'],self.RDPs[file_id]['gap'] = gap_brush_analysis.calc_2D_avg_RDP(self.file_xyz_path[file_id],
+        self.RDPs[file_id]['brush'],self.RDPs[file_id]['gap'], concentration = gap_brush_analysis.calc_2D_avg_RDP(self.file_xyz_path[file_id],
                                                            arr.shape[:3],
                                                            int(vals['gap']),
                                                            int(vals['NP']),

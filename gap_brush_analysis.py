@@ -279,6 +279,7 @@ def calc_2D_avg_RDP(_filename,
         frame_lines = int(fp.readline()) + 2
     avg_RDP_brush = None
     avg_RDP_gap = None
+    concentration = None
 
     # retrieve NP locations
     for chunk in reverseread.read_from_end(_filename, frame_lines):
@@ -289,6 +290,7 @@ def calc_2D_avg_RDP(_filename,
         part_data_gap = np.zeros((_NPs, 3))
         NPs_brush = 0
         NPs_gap = 0
+
 
         for i, line in enumerate(chunk):
 
@@ -314,13 +316,15 @@ def calc_2D_avg_RDP(_filename,
         #filtered_brush = part_data_brush[((part_data_brush[:, 2] < index_brush) & (part_data_brush[:, 2] > 1))]
         filtered_brush = [part_data_brush[((part_data_brush[:, 2] > z) & (part_data_brush[:, 2] < (z+1) ) )]
                           for z in range(_system_dims[2])]
+        NPC_brush = np.asarray([ a.shape[0] for a in filtered_brush])
+
         #good to right here
         #filtered_gap = part_data_gap[((part_data_gap[:, 2] < index_gap) & (part_data_gap[:, 2] > 1))]
         filtered_gap =   [part_data_gap[((part_data_gap[:, 2] > z) & (part_data_gap[:, 2] < (z+1) ) )]
                         for z in range(_system_dims[2])]
-
+        NPC_gap = np.asarray([a.shape[0] for a in filtered_gap])
         # now compute pairwise differences on this reduced array
-        ### section need to be redone to take into account PBCs
+
         #pairwise_brush_diff = filtered_brush[:, None, :] - filtered_brush[None, :, :]
         pairwise_brush_diff = [ filtered_brush_layer[:, None, :] - filtered_brush_layer[None, :, :]
             for filtered_brush_layer in filtered_brush]
@@ -396,15 +400,19 @@ def calc_2D_avg_RDP(_filename,
         if avg_RDP_brush is None:
             avg_RDP_brush = np.zeros(np.asarray(normed_brush).shape)
 
+        if concentration is None:
+            concentration = np.zeros(NPC_brush.shape)
+
         avg_RDP_brush += np.asarray(normed_brush)
         avg_RDP_gap += np.asarray(normed_gap)
+        concentration += NPC_gap + NPC_brush
         processed += 1
 
     # plt.plot(normed_brush[5])
     # plt.show()
 
     #return normed_brush, normed_gap
-    return avg_RDP_brush/float(processed), avg_RDP_gap/float(processed)
+    return avg_RDP_brush/float(processed), avg_RDP_gap/float(processed), concentration
 
 
 def build_density_voxels(filename,
