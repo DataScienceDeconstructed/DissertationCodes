@@ -1,13 +1,14 @@
 import os
 import uuid
 
-np_options = [0, 4, 8, 16, 32, 64, 128, 256, 320, 384, 512, 768, 1024] # nps
+#np_options =  [0, 4, 8, 16, 32, 64, 128, 256, 320, 384, 512, 768, 1024] # nps
+np_options = [320, 384, 512, 768, 1024] # nps
 file_id=str(uuid.uuid4())
 strength_U = [-0.175]
 length_radius = [2]
-grafting_density = [0.1, 0.2, 0.3, 0.4, 0.5]
+grafting_density = [0.06] #[0.1, 0.2, 0.3, 0.4, 0.5]
 num_nanoparticles = np_options[:]
-gap = [0, 4, 8, 16, 32, 64, 128, 256]
+gap = [0] # [0, 4, 8, 16, 32, 64, 128, 256]
 length = [32, 64, 128] # length from stacking 4 NPs and then doubling to remove any edge effects that could occur.
 
 process = "dual"

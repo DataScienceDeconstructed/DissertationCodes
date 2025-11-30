@@ -10,11 +10,11 @@ import subprocess
 
 # post process the directories with data
 #base_dir = "/scratch/chdavis/exp_4/NP_BRUSH/Umin_-0.175/rad_2/den_0.2/gap_0/len_128/NP_512"
-base_dir = "/scratch/chdavis/exp_4/NP_BRUSH/Umin_-0.175/rad_2"
+#base_dir = "/scratch/chdavis/exp_4/NP_BRUSH/Umin_-0.175/rad_2"
 #base_dir = "/scratch/chdavis/exp_4/NP_BRUSH/Umin_-0.175/rad_2/den_0.1/gap_0/len_32/NP_64"
 #base_dir = "/scratch/chdavis/exp_4/NP_BRUSH/Umin_-0.175/rad_2/den_0.1/gap_32/len_32/NP_0"
 
-#base_dir = "/scratch/chdavis/exp_3_f/NP_BRUSH"
+base_dir = "/scratch/chdavis/exp_5/NP_BRUSH"
 processed = 0
 total = 0
 processing_missing = []

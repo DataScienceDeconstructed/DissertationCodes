@@ -18,7 +18,7 @@ from PyQt5.QtCore import Qt
 import gap_brush_analysis
 
 # ---------------- Constants ----------------
-VARS = ["Umin", "rad", "den", "gap", "len", "NP"]
+VARS = ["Umin", "rad", "den", "gap", "len", "NP", "system x", "system y", "system z"]
 AXIS_MAP = {"X": 0, "Y": 1, "Z": 2}
 
 
@@ -53,6 +53,7 @@ class DensityExplorer(QMainWindow):
         self.slice_images = {1: None, 2: None, 'diff': None}   # matplotlib.image.AxesImage
         self.colorbars    = {1: None, 2: None, 'diff': None}   # matplotlib.colorbar.Colorbar
         self.RDPs = {1: {'brush': None, 'gap': None}, 2: {'brush': None, 'gap': None}}
+        self.concentrations = {1: {'brush': None, 'gap': None}, 2: {'brush': None, 'gap': None}}
         self._build_ui()
 
     # ----------------------------- UI -----------------------------
@@ -235,7 +236,7 @@ class DensityExplorer(QMainWindow):
                     vals[name] = value
 
 
-        self.RDPs[file_id]['brush'],self.RDPs[file_id]['gap'], concentration = gap_brush_analysis.calc_2D_avg_RDP(self.file_xyz_path[file_id],
+        self.RDPs[file_id]['brush'],self.RDPs[file_id]['gap'], self.concentrations[file_id]['brush'] = gap_brush_analysis.calc_2D_avg_RDP(self.file_xyz_path[file_id],
                                                            arr.shape[:3],
                                                            int(vals['gap']),
                                                            int(vals['NP']),
@@ -596,6 +597,14 @@ class DensityExplorer(QMainWindow):
             axes_row[2].plot(
                 self.RDPs[1]['brush'][self.slice_index[1]],
                 label="RDP for Z plane",
+                linewidth=1,
+                alpha=1.0,
+
+            )
+            axes_row[1].set_title("Z Plane NP Concentration")
+            axes_row[1].plot(
+                self.concentrations[1]['brush'] ,
+                label="NP Concentration",
                 linewidth=1,
                 alpha=1.0,
 
