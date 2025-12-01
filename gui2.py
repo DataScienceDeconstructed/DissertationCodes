@@ -530,6 +530,7 @@ class DensityExplorer(QMainWindow):
         # Orange slice line on the currently selected axis plot
         axis_idx = AXIS_MAP[self.slice_axis[key]]
         axes_row[axis_idx].axvline(self.slice_index[key], color='orange', linestyle='--')
+        #axes_row[0].axvline(self.slice_index[key], color='orange', linestyle='--')
         # add above to concentration plot ^^
         # Legend below each plot
         for i in range(3):
@@ -625,6 +626,8 @@ class DensityExplorer(QMainWindow):
                 alpha=1.0,
 
             )
+
+            axes_row[1].axvline(self.slice_index[1], color='orange', linestyle='--')
 
             ax = self.axes[key][3]
 
