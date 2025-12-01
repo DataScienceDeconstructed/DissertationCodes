@@ -412,7 +412,7 @@ def calc_2D_avg_RDP(_filename,
     # plt.show()
 
     #return normed_brush, normed_gap
-    return avg_RDP_brush/float(processed), avg_RDP_gap/float(processed), concentration/_system_dims[0]/_system_dims[1]
+    return avg_RDP_brush/float(processed), avg_RDP_gap/float(processed), concentration/_system_dims[0]/_system_dims[1]/200.0
 
 
 def build_density_voxels(filename,

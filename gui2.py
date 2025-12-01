@@ -18,7 +18,7 @@ from PyQt5.QtCore import Qt
 import gap_brush_analysis
 
 # ---------------- Constants ----------------
-VARS = ["Umin", "rad", "den", "gap", "len", "NP", "system x", "system y", "system z"]
+VARS = ["Umin", "rad", "den", "gap", "len", "NP", "system x", "system y", "system z", "concentration at z"]
 AXIS_MAP = {"X": 0, "Y": 1, "Z": 2}
 
 
@@ -234,7 +234,10 @@ class DensityExplorer(QMainWindow):
                 name, value = part.split('_', 1)
                 if name in vals:
                     vals[name] = value
-
+#"system x", "system y", "system z", "concentration at z"
+        vals["system x"] = arr.shape[0]
+        vals["system y"] = arr.shape[1]
+        vals["system z"] = arr.shape[2]
 
         self.RDPs[file_id]['brush'],self.RDPs[file_id]['gap'], self.concentrations[file_id]['brush'] = gap_brush_analysis.calc_2D_avg_RDP(self.file_xyz_path[file_id],
                                                            arr.shape[:3],
@@ -242,6 +245,8 @@ class DensityExplorer(QMainWindow):
                                                            int(vals['NP']),
                                                            int(vals['len'])
                                                            )
+        vals["concentration at z"] = self.concentrations[file_id]['brush'][0]
+
         # self.RDPs[file_id]['brush'],self.RDPs[file_id]['gap'] = gap_brush_analysis.calc_2D_RDP(self.last_frame_path[file_id],
         #                                       arr.shape[:3],
         #                                       int(vals['gap']),
@@ -266,7 +271,7 @@ class DensityExplorer(QMainWindow):
 
         # Reset axis/slider bounds and variables
         self._reset_slider_bounds(file_id)
-        self._update_var_labels_from_path(file_id, path)
+        self._update_var_labels_from_path(file_id, path, arr.shape[:3])
 
         # Update plots for this dataset
         self._update_all_plots(file_id)
@@ -293,7 +298,7 @@ class DensityExplorer(QMainWindow):
             self.colorbars[key] = None
         self.slice_images[key] = None
 
-    def _update_var_labels_from_path(self, file_id: int, path: str):
+    def _update_var_labels_from_path(self, file_id: int, path: str, _system_dims):
         # Parse variables from directory names: varname_value
         vals = {v: 'missing' for v in VARS}
         for part in os.path.normpath(path).split(os.sep):
@@ -301,6 +306,11 @@ class DensityExplorer(QMainWindow):
                 name, value = part.split('_', 1)
                 if name in vals:
                     vals[name] = value
+
+        vals["system x"] = str(_system_dims[0])
+        vals["system y"] = str(_system_dims[1])
+        vals["system z"] = str(_system_dims[2])
+
         labels = self._ctrl_for(file_id)['var_labels']
         for k, lab in labels.items():
             lab.setText(f"{k} = {vals[k]}")
@@ -409,6 +419,12 @@ class DensityExplorer(QMainWindow):
                 self._apply_sync_to_dataset('diff')
                 self._update_all_plots('diff')
 
+            labels = self._ctrl_for(key)['var_labels']
+            #labels["concentration at z"].setText(self, self.concentrations[1]['brush'][self.slice_index[key]])
+            for k, lab in labels.items():
+                if k == "concentration at z":
+                    lab.setText(f"{k} = {self.concentrations[1]['brush'][self.slice_index[key]]}")
+
     def _toggle_sync(self, key, state):
         self.sync_to_file1[key] = (state == Qt.Checked)
         ctrl = self._ctrl_for(key)
@@ -514,7 +530,7 @@ class DensityExplorer(QMainWindow):
         # Orange slice line on the currently selected axis plot
         axis_idx = AXIS_MAP[self.slice_axis[key]]
         axes_row[axis_idx].axvline(self.slice_index[key], color='orange', linestyle='--')
-
+        # add above to concentration plot ^^
         # Legend below each plot
         for i in range(3):
             axes_row[i].legend(
