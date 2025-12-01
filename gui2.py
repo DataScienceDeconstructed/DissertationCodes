@@ -11,7 +11,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QFileDialog, QComboBox, QSlider, QLabel, QCheckBox,
-    QMessageBox, QSizePolicy
+    QMessageBox, QSizePolicy, QStatusBar
 )
 from PyQt5.QtCore import Qt
 
@@ -37,6 +37,8 @@ class DensityExplorer(QMainWindow):
         super().__init__()
         self.setWindowTitle("4D Density Explorer — Two Files + Difference")
         self.resize(1600, 1050)
+
+        self.setStatusBar(QStatusBar(self))
 
         # Data storage
         self.data = {1: None, 2: None, 'diff': None}
@@ -86,12 +88,29 @@ class DensityExplorer(QMainWindow):
             'diff': grid[2, :], # row 2: Diff
         }
         self.canvas = FigureCanvas(self.fig)
+        self.canvas.mpl_connect("motion_notify_event", self._on_mouse_move)
+
         root.addWidget(self.canvas)
+        # Safe tight layout: only once, after canvas is in the layout
+        self.fig.tight_layout()
 
         self._init_empty_plots()
 
+
     def _make_dataset_header(self, title: str) -> QLabel:
         return QLabel(f"<b>{title}</b>")
+
+    def _on_mouse_move(self, event):
+        if event.inaxes is None:
+            return
+
+        ax = event.inaxes
+        if hasattr(ax, "format_coord"):
+            # matplotlib will call this method for the status bar
+            # But QtAgg does NOT automatically update the window title,
+            # so we print it manually or set to status bar
+            text = ax.format_coord(event.xdata, event.ydata)
+            self.statusBar().showMessage(text)
 
     def _make_controls_row(self, file_id, with_sync: bool = False, is_diff: bool = False):
         row = {}
@@ -192,7 +211,7 @@ class DensityExplorer(QMainWindow):
                 ax.set_title("Slice (load both files to compute difference)")
             else:
                 ax.set_title("Slice (load a file)")
-        self.fig.tight_layout()
+        #self.fig.tight_layout()
         self.canvas.draw()
 
     # ----------------------------- Load & Parse -----------------------------
@@ -378,7 +397,7 @@ class DensityExplorer(QMainWindow):
             self.axes['diff'][i].set_ylabel("Normalized Density")
             self.axes['diff'][i].axhline(0.0, color='black', linestyle=':')
         self.axes['diff'][3].set_title("Slice (load both files to compute difference)")
-        self.fig.tight_layout()
+        #self.fig.tight_layout()
         self.canvas.draw()
 
     # ------------------------- Event handlers -------------------------
@@ -482,7 +501,7 @@ class DensityExplorer(QMainWindow):
             return
         self._update_summaries(key)
         self._update_slice_plot(key)
-        self.fig.tight_layout()
+        #self.fig.tight_layout()
         self.canvas.draw_idle()
 
     def _update_summaries(self, key):
@@ -572,6 +591,7 @@ class DensityExplorer(QMainWindow):
         if self.slice_images[key] is None:
             ax.cla()  # clear once on first draw to ensure a clean axes
             im = ax.imshow(slice_2d.T, origin='lower', aspect='auto', cmap='viridis')
+            ax.format_coord = lambda x, y: f'x={x:.2f}, y={y:.2f}'
             ax.set_title(f"{axis_txt}-slice at {idx} (Type {t})")
             ax.set_xlabel(xlab)
             ax.set_ylabel(ylab)
@@ -592,7 +612,7 @@ class DensityExplorer(QMainWindow):
                 vmin -= eps
                 vmax += eps
             im.set_clim(vmin=vmin, vmax=vmax)
-
+            ax.format_coord = lambda x, y: f'x={x:.2f}, y={y:.2f}'
             ax.set_title(f"{axis_txt}-slice at {idx} (Type {t})")
             ax.set_xlabel(xlab)
             ax.set_ylabel(ylab)
@@ -638,6 +658,7 @@ class DensityExplorer(QMainWindow):
             if self.slice_images[key] is None:
                 ax.cla()  # clear once on first draw to ensure a clean axes
                 im = ax.imshow(slice_2d.T, origin='lower', aspect='auto', cmap='viridis')
+                ax.format_coord = lambda x, y: f'x={x:.2f}, y={y:.2f}'
                 ax.set_title(f"Z Plane FFT at {idx} (Type {t})")
                 ax.set_xlabel(xlab)
                 ax.set_ylabel(ylab)
@@ -658,7 +679,7 @@ class DensityExplorer(QMainWindow):
                     vmin -= eps
                     vmax += eps
                 im.set_clim(vmin=vmin, vmax=vmax)
-
+                ax.format_coord = lambda x, y: f'x={x:.2f}, y={y:.2f}'
                 ax.set_title(f"{axis_txt}-slice at {idx} (Type {t})")
                 ax.set_xlabel(xlab)
                 ax.set_ylabel(ylab)
