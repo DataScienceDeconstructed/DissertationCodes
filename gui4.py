@@ -8,10 +8,12 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
+from PyQt5.QtGui import QCursor
+
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QFileDialog, QComboBox, QSlider, QLabel, QCheckBox,
-    QMessageBox, QSizePolicy, QStatusBar
+    QMessageBox, QSizePolicy, QStatusBar, QToolTip
 )
 from PyQt5.QtCore import Qt
 
@@ -76,8 +78,7 @@ class DensityExplorer(QMainWindow):
         #self.fig, grid = plt.subplots(2, 4, figsize=(16, 12))
         self.fig, grid = plt.subplots(
             2, 4,
-            figsize=(16, 12),
-            constrained_layout=True
+            figsize=(16, 12)
         )
 
         self.axes = {
@@ -86,11 +87,21 @@ class DensityExplorer(QMainWindow):
         }
         self.canvas = FigureCanvas(self.fig)
         self.canvas.mpl_connect("motion_notify_event", self._on_mouse_move)
+        self.fig.subplots_adjust(
+            left=0.06,
+            right=0.97,
+            top=0.95,
+            bottom=0.07,
+            wspace=0.35,
+            hspace=0.45
+        )
 
         root.addWidget(self.canvas)
 
         # safe tight layout (once)
-        self.fig.tight_layout()
+        #self.fig.tight_layout()
+        # Remove tight_layout() because it breaks constrained_layout
+
 
         self._init_empty_plots()
 
@@ -98,7 +109,7 @@ class DensityExplorer(QMainWindow):
         return QLabel(f"<b>{title}</b>")
 
     # ---------------- mouse tracking ----------------
-    def _on_mouse_move(self, event):
+    def _old__on_mouse_move(self, event):
         if event.inaxes is None:
             return
         ax = event.inaxes
@@ -107,6 +118,93 @@ class DensityExplorer(QMainWindow):
         except Exception:
             msg = ""
         self.statusBar().showMessage(msg)
+
+    from PyQt5.QtWidgets import QToolTip
+    from PyQt5.QtGui import QCursor
+
+    def _on_mouse_move(self, event):
+        """Displays tooltips and keeps status bar coordinates."""
+
+        if event.inaxes is None:
+            QToolTip.hideText()
+            self.statusBar().clearMessage()
+            return
+
+        ax = event.inaxes
+
+        # ---- SLICE IMAGES ----
+        img = None
+        for key in (1, 2):
+            if self.slice_images[key] is not None and self.slice_images[key].axes is ax:
+                img = self.slice_images[key]
+                break
+
+        if img is not None:
+            data = img.get_array()
+            x = event.xdata
+            y = event.ydata
+
+            ix = int(round(x))
+            iy = int(round(y))
+
+            if 0 <= ix < data.shape[0] and 0 <= iy < data.shape[1]:
+                val = data[ix, iy]
+                QToolTip.showText(
+                    QCursor.pos(),
+                    f"x={ix}, y={iy}\nvalue={val:.5g}",
+                    self
+                )
+            else:
+                QToolTip.hideText()
+
+            # Keep status bar updated
+            try:
+                msg = ax.format_coord(event.xdata, event.ydata)
+                self.statusBar().showMessage(msg)
+            except:
+                pass
+            return
+
+        # ---- LINE PLOTS ----
+        x = event.xdata
+        if x is None:
+            QToolTip.hideText()
+            self.statusBar().clearMessage()
+            return
+
+        best_info = None
+        min_dist = float("inf")
+
+        for line in ax.lines:
+            xd = line.get_xdata()
+            yd = line.get_ydata()
+
+            if len(xd) == 0:
+                continue
+
+            idx = int(round(x))
+            if 0 <= idx < len(xd):
+                dist = abs(x - idx)
+                if dist < min_dist:
+                    min_dist = dist
+                    best_info = (xd[idx], yd[idx])
+
+        if best_info:
+            xv, yv = best_info
+            QToolTip.showText(
+                QCursor.pos(),
+                f"x={int(round(xv))}, y={yv:.5g}",
+                self
+            )
+        else:
+            QToolTip.hideText()
+
+        # Update the status bar text as before
+        try:
+            msg = ax.format_coord(event.xdata, event.ydata)
+            self.statusBar().showMessage(msg)
+        except:
+            pass
 
     # ---------------- controls ----------------
     def _make_controls_row(self, file_id, with_sync: bool = False):
