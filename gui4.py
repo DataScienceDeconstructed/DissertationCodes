@@ -34,7 +34,7 @@ class DensityExplorer(QMainWindow):
         super().__init__()
         self.setWindowTitle("4D Density Explorer — Two Files Only")
         self.resize(1600, 1050)
-
+        self.system_dims = [0,0,0]
         # status bar
         self.setStatusBar(QStatusBar(self))
 
@@ -159,7 +159,7 @@ class DensityExplorer(QMainWindow):
 
             # Keep status bar updated
             try:
-                msg = ax.format_coord(event.xdata, event.ydata)
+                msg = ax.format_coord(event.xdata-self.system_dims[0]//2, event.ydata-self.system_dims[1]//2)
                 self.statusBar().showMessage(msg)
             except:
                 pass
@@ -175,19 +175,19 @@ class DensityExplorer(QMainWindow):
         best_info = None
         min_dist = float("inf")
 
-        for line in ax.lines:
-            xd = line.get_xdata()
-            yd = line.get_ydata()
+        if len(ax.lines) > 3:
+            xd = ax.lines[self.selected_type[1]].get_xdata()
+            yd = ax.lines[self.selected_type[1]].get_ydata()
+        else:
+            xd = ax.lines[0].get_xdata()
+            yd = ax.lines[0].get_ydata()
 
-            if len(xd) == 0:
-                continue
-
-            idx = int(round(x))
-            if 0 <= idx < len(xd):
-                dist = abs(x - idx)
-                if dist < min_dist:
-                    min_dist = dist
-                    best_info = (xd[idx], yd[idx])
+        idx = int(round(x))
+        if 0 <= idx < len(xd):
+            dist = abs(x - idx)
+            if dist < min_dist:
+                min_dist = dist
+                best_info = (xd[idx], yd[idx])
 
         if best_info:
             xv, yv = best_info
@@ -336,6 +336,9 @@ class DensityExplorer(QMainWindow):
         vals["system x"] = arr.shape[0]
         vals["system y"] = arr.shape[1]
         vals["system z"] = arr.shape[2]
+        self.system_dims[0] = arr.shape[0]
+        self.system_dims[1] = arr.shape[1]
+        self.system_dims[2] = arr.shape[2]
 
         # compute RDP + concentration
         self.RDPs[file_id]['brush'], self.RDPs[file_id]['gap'], \
