@@ -159,7 +159,18 @@ class DensityExplorer(QMainWindow):
 
             # Keep status bar updated
             try:
-                msg = ax.format_coord(event.xdata-self.system_dims[0]//2, event.ydata-self.system_dims[1]//2)
+                xfreq = 0
+                yfreq = 0
+                xpixels = 0
+                ypixels = 0
+
+                if event.xdata > 0:
+                    xfreq = float(event.xdata-self.system_dims[0]//2)/float(self.system_dims[0])
+                    xpixels = 1.0/xfreq
+                if event.ydata > 0:
+                    yfreq = float(event.ydata-self.system_dims[1]//2)/float(self.system_dims[1])
+                    ypixels = 1.0 / yfreq
+                msg = ax.format_coord(xfreq, yfreq) + f"structure size: {xpixels:.2f}"
                 self.statusBar().showMessage(msg)
             except:
                 pass
@@ -601,7 +612,7 @@ class DensityExplorer(QMainWindow):
             # RDP
             axes_row[2].set_title("Z Plane RDP")
             axes_row[2].plot(
-                self.RDPs[1]['brush'][self.slice_index[1]],
+                self.RDPs[1]['brush'][self.slice_index[1]][:self.system_dims[0]//2-1],
                 linewidth=1,
                 alpha=1.0,
             )
