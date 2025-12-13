@@ -257,6 +257,7 @@ class DensityExplorer(QMainWindow):
 
         # Slider
         slider = QSlider(Qt.Horizontal)
+        slider.setFocusPolicy(Qt.StrongFocus)
         slider.setRange(0, 0)
         slider.setValue(0)
         slider.valueChanged.connect(lambda _, fid=file_id: self._on_slider_changed(fid))

@@ -1,5 +1,5 @@
 
-base_dir = "/scratch/chdavis/exp_5/NP_BRUSH/Umin_-0.175/rad_2/den_0.06/gap_0/len_32/NP_1024"
+base_dir = "/scratch/chdavis/exp_4/NP_BRUSH/Umin_-0.175/rad_2/den_0.1/gap_0/len_32/NP_1024"
 
 thin_film = []
 
