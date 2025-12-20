@@ -362,6 +362,16 @@ class DensityExplorer(QMainWindow):
             int(vals['len'])
         )
 
+        concentration_brush_path = Path(path)
+        parent_path = concentration_brush_path.parent
+        concentration_brush_path = parent_path / "concentration_brush.dat"
+        if not concentration_brush_path.exists():
+            np.savetxt(concentration_brush_path, self.concentrations[file_id]['brush'],
+                       header=path,
+                       comments="# ",
+                       fmt="%.6e"
+                       )
+
         vals["concentration at z"] = self.concentrations[file_id]['brush'][0]
 
         self._reset_slice_artists(file_id)
